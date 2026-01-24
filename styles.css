@@ -107,6 +107,25 @@ h1 {
   margin-bottom: 10px;
 }
 
+/* iOS Safari date input can overflow its container */
+.card {
+  overflow: hidden; /* clips any weird iOS overhang */
+}
+
+.authStack > div {
+  min-width: 0; /* allow children to shrink */
+}
+
+input {
+  max-width: 100%;
+}
+
+input[type="date"] {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
 .right {
   text-align: right;
 }
@@ -256,8 +275,8 @@ input:focus {
   gap: 12px;
 
   /* calm success / info look */
-  background: rgba(10, 132, 255, 0.18);
-  border: 1px solid rgba(10, 132, 255, 0.35);
+  background: rgba(255, 59, 48, 0.18);
+  border: 1px solid rgba(255, 59, 48, 0.28);
   color: var(--text);
 }
 
