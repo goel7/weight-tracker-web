@@ -1,10 +1,11 @@
-// 1) Paste your Supabase keys here:
 const SUPABASE_URL = "https://leksemdifenhfvfafcqa.supabase.co";
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxla3NlbWRpZmVuaGZ2ZmFmY3FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyNzk3MjIsImV4cCI6MjA4NDg1NTcyMn0.hpa7L5oqxgn2u2PIk4F0UfRTKWpB07MYOa7uyjPJE-Y";
 
-const { createClient } = window.supabase;
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+console.log("app.js loaded ✅", sb);
 
 // UI
 const authCard = document.getElementById("authCard");
