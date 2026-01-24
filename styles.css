@@ -6,14 +6,30 @@
   --muted: rgba(245, 245, 247, 0.65);
   --blue: #0a84ff;
   --red: #ff3b30;
+
+  /* layout knobs */
+  --container-max: 920px;
+  --auth-max: 560px;
+  --radius: 16px;
 }
 
 * {
   box-sizing: border-box;
 }
+
+html,
+body {
+  height: 100%;
+}
+
 body {
   margin: 0;
-  background: radial-gradient(
+  color: var(--text);
+  font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+
+  min-height: 100dvh; /* better on iPhone */
+  background-color: var(--bg);
+  background-image: radial-gradient(
       1200px 600px at 20% 0%,
       rgba(10, 132, 255, 0.18),
       transparent 55%
@@ -22,43 +38,67 @@ body {
       900px 500px at 90% 20%,
       rgba(255, 59, 48, 0.1),
       transparent 55%
-    ),
-    var(--bg);
-  color: var(--text);
-  font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    );
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
 }
+
+@supports (-webkit-touch-callout: none) {
+  body {
+    background-attachment: scroll;
+  }
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ---- Layout ---- */
 .container {
-  max-width: 920px;
+  max-width: var(--container-max);
   margin: 0 auto;
   padding: 22px;
 }
+
 .header {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  margin-bottom: 22px;
 }
+
 h1 {
   margin: 0;
   font-size: 28px;
+  letter-spacing: -0.02em;
 }
+
 .sub {
   margin: 4px 0 0;
   color: var(--muted);
 }
-.hidden {
-  display: none;
-}
 
+/* ---- Cards ---- */
 .card {
   background: var(--card);
   border: 1px solid var(--stroke);
-  border-radius: 16px;
+  border-radius: var(--radius);
   padding: 16px;
   margin-top: 14px;
   backdrop-filter: blur(10px);
 }
+
+/* Make auth feel “narrow + centered” on desktop */
+.card.authCard {
+  max-width: var(--auth-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding: 22px;
+}
+
 .card-title {
   display: flex;
   align-items: flex-end;
@@ -66,26 +106,53 @@ h1 {
   gap: 12px;
   margin-bottom: 10px;
 }
+
 .right {
   text-align: right;
 }
+
 .big {
   font-size: 18px;
   font-weight: 700;
 }
+
 .tiny {
   font-size: 12px;
 }
+
 .muted {
   color: var(--muted);
 }
+
 .small {
   font-size: 12px;
 }
+
 .mono {
   font-variant-numeric: tabular-nums;
 }
 
+/* ---- Auth stack (vertical always) ---- */
+.authHeader h2 {
+  margin: 0 0 8px;
+  font-size: 34px;
+  letter-spacing: -0.02em;
+}
+
+.authHeader p {
+  margin: 0;
+}
+
+.authStack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  margin-top: 14px;
+}
+
+/* If plan to use grid2 somewhere else, keep.
+   But for auth, use .authStack for vertical. */
 .grid2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -97,66 +164,129 @@ h1 {
   }
 }
 
+/* ---- Inputs ---- */
 label {
   display: block;
   font-size: 12px;
   color: var(--muted);
   margin-bottom: 6px;
 }
+
 input {
   width: 100%;
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
   border: 1px solid var(--stroke);
   background: rgba(0, 0, 0, 0.25);
   color: var(--text);
   outline: none;
-}
-input:focus {
-  border-color: rgba(10, 132, 255, 0.6);
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
+input:focus {
+  border-color: rgba(10, 132, 255, 0.65);
+  background: rgba(0, 0, 0, 0.32);
+}
+
+/* ---- Rows / Buttons ---- */
 .row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 12px;
+  gap: 12px;
+  margin-top: 14px;
   flex-wrap: wrap;
 }
 
 .btn {
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 11px 14px;
+  border-radius: 14px;
   border: 1px solid var(--stroke);
   background: rgba(255, 255, 255, 0.08);
   color: var(--text);
   cursor: pointer;
+  transition: transform 0.06s ease, background 0.15s ease,
+    border-color 0.15s ease;
 }
+
+.btn:hover {
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
 .btn.primary {
   background: rgba(10, 132, 255, 0.28);
   border-color: rgba(10, 132, 255, 0.35);
 }
+
+.btn.primary:hover {
+  background: rgba(10, 132, 255, 0.34);
+}
+
 .btn.ghost {
   background: transparent;
 }
 
-.banner {
-  margin-top: 12px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(255, 59, 48, 0.18);
-  border: 1px solid rgba(255, 59, 48, 0.28);
+/* Make auth buttons feel consistent */
+.authCard .btn {
+  min-width: 150px;
 }
 
+@media (max-width: 420px) {
+  .authCard .btn {
+    min-width: 0;
+    width: 100%;
+  }
+  .authCard .row {
+    width: 100%;
+  }
+}
+
+/* ---- Banner ---- */
+.banner {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border-radius: 14px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  /* calm success / info look */
+  background: rgba(10, 132, 255, 0.18);
+  border: 1px solid rgba(10, 132, 255, 0.35);
+  color: var(--text);
+}
+
+#bannerClose {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+}
+
+#bannerClose:hover {
+  color: var(--text);
+}
+
+/* ---- Chart ---- */
 .chartWrap {
   height: 280px;
 }
 
+/* ---- Tabs ---- */
 .tabs {
   display: flex;
   gap: 8px;
   margin-bottom: 10px;
 }
+
 .tab {
   padding: 8px 10px;
   border-radius: 999px;
@@ -165,35 +295,42 @@ input:focus {
   color: var(--text);
   cursor: pointer;
 }
+
 .tab.active {
   background: rgba(10, 132, 255, 0.25);
   border-color: rgba(10, 132, 255, 0.35);
 }
 
+/* ---- Tables ---- */
 .tableWrap {
   overflow: auto;
   border-radius: 12px;
   border: 1px solid var(--stroke);
 }
+
 .table {
   width: 100%;
   border-collapse: collapse;
   min-width: 520px;
 }
+
 .table th,
 .table td {
   padding: 10px 12px;
   border-bottom: 1px solid var(--stroke);
   text-align: left;
 }
+
 .table th {
   font-size: 12px;
   color: var(--muted);
   font-weight: 600;
 }
+
 .table tr:hover td {
   background: rgba(255, 255, 255, 0.04);
 }
+
 .actionBtn {
   padding: 6px 10px;
   border-radius: 10px;
@@ -201,4 +338,8 @@ input:focus {
   background: rgba(255, 59, 48, 0.18);
   color: var(--text);
   cursor: pointer;
+}
+
+.actionBtn:hover {
+  background: rgba(255, 59, 48, 0.24);
 }

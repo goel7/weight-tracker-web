@@ -2,10 +2,10 @@ const SUPABASE_URL = "https://leksemdifenhfvfafcqa.supabase.co";
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxla3NlbWRpZmVuaGZ2ZmFmY3FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyNzk3MjIsImV4cCI6MjA4NDg1NTcyMn0.hpa7L5oqxgn2u2PIk4F0UfRTKWpB07MYOa7uyjPJE-Y";
 
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-console.log("app.js loaded ✅", sb);
+console.log("app.js loaded ✅");
 
 // UI
 const authCard = document.getElementById("authCard");
@@ -15,8 +15,16 @@ const logoutBtn = document.getElementById("logoutBtn");
 
 const emailEl = document.getElementById("email");
 const passEl = document.getElementById("password");
-const registerBtn = document.getElementById("registerBtn");
-const loginBtn = document.getElementById("loginBtn");
+
+const primaryAuthBtn = document.getElementById("primaryAuthBtn");
+const toggleAuthBtn = document.getElementById("toggleAuthBtn");
+
+const authTitle = document.getElementById("authTitle");
+const authSubtitle = document.getElementById("authSubtitle");
+const authHint = document.getElementById("authHint");
+
+const confirmWrap = document.getElementById("confirmWrap");
+const pass2El = document.getElementById("password2");
 
 const dateInput = document.getElementById("dateInput");
 const weightInput = document.getElementById("weightInput");
@@ -35,14 +43,20 @@ let weights = [];
 let chart = null;
 
 // helpers
+const bannerText = document.getElementById("bannerText");
+const bannerClose = document.getElementById("bannerClose");
+
 function showBanner(msg) {
-  banner.textContent = msg;
+  bannerText.textContent = msg;
   banner.classList.remove("hidden");
 }
+
 function clearBanner() {
-  banner.textContent = "";
   banner.classList.add("hidden");
+  bannerText.textContent = "";
 }
+
+bannerClose.addEventListener("click", clearBanner);
 
 function isoToday() {
   return new Date().toISOString().slice(0, 10);
@@ -118,31 +132,76 @@ async function setUIAuthed(isAuthed) {
   logoutBtn.classList.toggle("hidden", !isAuthed);
 }
 
-registerBtn.addEventListener("click", async () => {
-  clearBanner();
-  try {
-    const { error } = await sb.auth.signUp({
-      email: emailEl.value.trim(),
-      password: passEl.value,
-    });
-    if (error) throw error;
-    showBanner("Registered. Now login.");
-  } catch (e) {
-    showBanner(`Register failed: ${e.message}`);
+let authMode = "login"; // "login" or "signup"
+
+function setAuthMode(mode) {
+  authMode = mode;
+
+  if (mode === "login") {
+    authTitle.textContent = "Sign in";
+    authSubtitle.textContent = "Welcome back. Log in to see your trend.";
+    primaryAuthBtn.textContent = "Login";
+    toggleAuthBtn.textContent = "Sign up instead";
+    authHint.textContent = "New here? Create an account in 10 seconds.";
+    confirmWrap.classList.add("hidden");
+    pass2El.value = "";
+    passEl.autocomplete = "current-password";
+  } else {
+    authTitle.textContent = "Create account";
+    authSubtitle.textContent =
+      "First time here? Make an account to start logging.";
+    primaryAuthBtn.textContent = "Create account";
+    toggleAuthBtn.textContent = "I already have an account";
+    authHint.textContent = "Use a real email if you keep confirmations on.";
+    confirmWrap.classList.remove("hidden");
+    passEl.autocomplete = "new-password";
   }
+}
+
+toggleAuthBtn.addEventListener("click", () => {
+  clearBanner();
+  setAuthMode(authMode === "login" ? "signup" : "login");
 });
 
-loginBtn.addEventListener("click", async () => {
+primaryAuthBtn.addEventListener("click", async () => {
   clearBanner();
+
+  const email = emailEl.value.trim();
+  const pw = passEl.value;
+
+  if (!email) return showBanner("Enter an email.");
+  if (!pw || pw.length < 6)
+    return showBanner("Password must be at least 6 characters.");
+
+  // Button UX: disable while loading
+  primaryAuthBtn.disabled = true;
+  toggleAuthBtn.disabled = true;
+
   try {
-    const { error } = await sb.auth.signInWithPassword({
-      email: emailEl.value.trim(),
-      password: passEl.value,
-    });
+    if (authMode === "signup") {
+      const pw2 = pass2El.value;
+      if (pw !== pw2) return showBanner("Passwords do not match.");
+
+      const { error } = await sb.auth.signUp({ email, password: pw });
+      if (error) throw error;
+
+      // If email confirmations are ON, user may need to confirm.
+      showBanner("Account created. Now log in (or confirm email if required).");
+      setAuthMode("login");
+      return;
+    }
+
+    // login
+    const { error } = await sb.auth.signInWithPassword({ email, password: pw });
     if (error) throw error;
     await bootstrapAuthed();
   } catch (e) {
-    showBanner(`Login failed: ${e.message}`);
+    showBanner(
+      `${authMode === "signup" ? "Sign up" : "Login"} failed: ${e.message}`
+    );
+  } finally {
+    primaryAuthBtn.disabled = false;
+    toggleAuthBtn.disabled = false;
   }
 });
 
@@ -323,6 +382,7 @@ async function bootstrapAuthed() {
 
 // boot
 (async function init() {
+  setAuthMode("login");
   const { data } = await sb.auth.getSession();
   if (data.session) await bootstrapAuthed();
   else await setUIAuthed(false);

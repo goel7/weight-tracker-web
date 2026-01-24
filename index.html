@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   </head>
+
   <body>
     <div class="container">
       <header class="header">
@@ -17,12 +18,21 @@
         <button id="logoutBtn" class="btn ghost hidden">Logout</button>
       </header>
 
-      <div id="banner" class="banner hidden"></div>
+      <div id="banner" class="banner hidden">
+        <span id="bannerText"></span>
+        <button id="bannerClose" aria-label="Close">&times;</button>
+      </div>
 
       <!-- AUTH -->
-      <section id="authCard" class="card">
-        <h2>Sign in</h2>
-        <div class="grid2">
+      <section id="authCard" class="card authCard">
+        <div class="authHeader">
+          <h2 id="authTitle">Sign in</h2>
+          <p id="authSubtitle" class="muted">
+            Welcome back. Log in to see your trend.
+          </p>
+        </div>
+
+        <div class="authStack">
           <div>
             <label>Email</label>
             <input
@@ -32,6 +42,7 @@
               autocomplete="email"
             />
           </div>
+
           <div>
             <label>Password</label>
             <input
@@ -41,11 +52,29 @@
               autocomplete="current-password"
             />
           </div>
+
+          <!-- Only shown in signup mode (JS toggles #confirmWrap) -->
+          <div id="confirmWrap" class="hidden">
+            <div>
+              <label>Confirm password</label>
+              <input
+                id="password2"
+                type="password"
+                placeholder="Re-enter password"
+                autocomplete="new-password"
+              />
+            </div>
+          </div>
         </div>
+
         <div class="row">
-          <button id="registerBtn" class="btn">Register</button>
-          <button id="loginBtn" class="btn primary">Login</button>
+          <button id="primaryAuthBtn" class="btn primary">Login</button>
+          <button id="toggleAuthBtn" class="btn ghost">Sign up instead</button>
         </div>
+
+        <p id="authHint" class="muted small" style="margin: 10px 0 0">
+          New here? Create an account in 10 seconds.
+        </p>
       </section>
 
       <!-- APP -->
@@ -62,6 +91,7 @@
               <label>Date</label>
               <input id="dateInput" type="date" />
             </div>
+
             <div>
               <label>Weight (lbs)</label>
               <input
