@@ -122,7 +122,21 @@
         <!-- CHART -->
         <section class="card">
           <div class="card-title">
-            <h2>Trend</h2>
+            <div>
+              <h2>Trend</h2>
+              <div class="toggles" role="group" aria-label="Chart toggles">
+                <label class="pillToggle">
+                  <input id="toggleWeight" type="checkbox" checked />
+                  <span>Daily</span>
+                </label>
+
+                <label class="pillToggle">
+                  <input id="toggleAvg7" type="checkbox" checked />
+                  <span>7-day avg</span>
+                </label>
+              </div>
+            </div>
+
             <div class="right">
               <div class="tiny muted">7-day avg</div>
               <div id="avg7Text" class="big mono">—</div>

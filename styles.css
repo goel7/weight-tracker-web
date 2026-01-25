@@ -92,6 +92,73 @@ h1 {
   color: var(--muted);
 }
 
+/* ---- Chart toggles ---- */
+
+.toggles {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+/* pill toggle */
+.pillToggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--stroke);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+  transition: 160ms ease;
+}
+
+.pillToggle:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--text);
+}
+
+/* hide the ugly native checkbox */
+.pillToggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* little indicator dot (matches glass vibe) */
+.pillToggle span::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.25);
+  display: inline-block;
+  margin-right: 8px;
+  transform: translateY(1px);
+}
+
+/* ON state */
+.pillToggle input:checked + span {
+  color: var(--text);
+}
+
+.pillToggle input:checked + span::before {
+  background: rgba(10, 132, 255, 0.35);
+  border-color: rgba(10, 132, 255, 0.45);
+}
+
+/* keyboard focus */
+.pillToggle:has(input:focus-visible) {
+  outline: 2px solid rgba(10, 132, 255, 0.35);
+  outline-offset: 2px;
+}
+
 /* ---- Cards ---- */
 .card {
   background: var(--card);

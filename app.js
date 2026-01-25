@@ -26,6 +26,9 @@ const authHint = document.getElementById("authHint");
 const confirmWrap = document.getElementById("confirmWrap");
 const pass2El = document.getElementById("password2");
 
+const toggleWeight = document.getElementById("toggleWeight");
+const toggleAvg7 = document.getElementById("toggleAvg7");
+
 const dateInput = document.getElementById("dateInput");
 const weightInput = document.getElementById("weightInput");
 const selectedDateText = document.getElementById("selectedDateText");
@@ -68,6 +71,29 @@ function parseISO(s) {
 function fmt2(x) {
   return Number(x).toFixed(2);
 }
+
+function applyChartVisibility() {
+  if (!chart) return;
+
+  const showWeight = toggleWeight ? toggleWeight.checked : true;
+  const showAvg7 = toggleAvg7 ? toggleAvg7.checked : true;
+
+  // dataset 0 = Weight, dataset 1 = 7-day avg
+  chart.setDatasetVisibility(0, showWeight);
+  chart.setDatasetVisibility(1, showAvg7);
+
+  // Optional UX message
+  if (!showWeight && !showAvg7) {
+    showBanner("Turn on Daily or 7-day avg to see the chart.");
+  } else {
+    clearBanner();
+  }
+
+  chart.update();
+}
+
+toggleWeight?.addEventListener("change", applyChartVisibility);
+toggleAvg7?.addEventListener("change", applyChartVisibility);
 
 function computePoints(rows) {
   const sorted = [...rows].sort((a, b) =>
@@ -311,6 +337,8 @@ function renderChart() {
       scales: { y: { min: domain.min, max: domain.max } },
     },
   });
+
+  applyChartVisibility();
 }
 
 function renderEntries() {
