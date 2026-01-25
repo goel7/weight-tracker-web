@@ -21,6 +21,10 @@ html,
 body {
   height: 100%;
   margin: 0;
+  background: transparent;
+}
+
+html {
   background: var(--bg);
 }
 
@@ -28,9 +32,10 @@ body {
   color: var(--text);
   font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
   min-height: 100dvh;
+  background: transparent;
 }
 
-/* ✅ This is what fixes the notch black area */
+/* fixes the notch black area */
 .bg {
   position: fixed;
   inset: 0;
@@ -40,12 +45,12 @@ body {
   background-color: var(--bg);
   background-image: radial-gradient(
       1200px 600px at 20% 0%,
-      rgba(10, 132, 255, 0.18),
+      rgba(10, 132, 255, 0.1),
       transparent 55%
     ),
     radial-gradient(
       900px 500px at 90% 20%,
-      rgba(255, 59, 48, 0.1),
+      rgba(255, 59, 48, 0.05),
       transparent 55%
     );
   background-repeat: no-repeat;
@@ -57,7 +62,6 @@ body {
   max-width: var(--container-max);
   margin: 0 auto;
 
-  /* ✅ safe-area padding (no duplicates) */
   padding-top: calc(22px + env(safe-area-inset-top));
   padding-right: calc(22px + env(safe-area-inset-right));
   padding-bottom: calc(22px + env(safe-area-inset-bottom));
