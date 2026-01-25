@@ -17,16 +17,25 @@
   box-sizing: border-box;
 }
 
-html {
+html,
+body {
   height: 100%;
-  background-color: var(--bg);
+  margin: 0;
+  background: var(--bg);
 }
 
 body {
-  margin: 0;
-  min-height: 100dvh;
   color: var(--text);
   font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  min-height: 100dvh;
+}
+
+/* ✅ This is what fixes the notch black area */
+.bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
 
   background-color: var(--bg);
   background-image: radial-gradient(
@@ -41,28 +50,22 @@ body {
     );
   background-repeat: no-repeat;
   background-size: cover;
-  background-attachment: fixed;
-}
-
-.container {
-  padding: calc(22px + env(safe-area-inset-top)) 22px 22px 22px;
-}
-
-@supports (-webkit-touch-callout: none) {
-  body {
-    background-attachment: scroll;
-  }
-}
-
-.hidden {
-  display: none !important;
 }
 
 /* ---- Layout ---- */
 .container {
   max-width: var(--container-max);
   margin: 0 auto;
-  padding: 22px;
+
+  /* ✅ safe-area padding (no duplicates) */
+  padding-top: calc(22px + env(safe-area-inset-top));
+  padding-right: calc(22px + env(safe-area-inset-right));
+  padding-bottom: calc(22px + env(safe-area-inset-bottom));
+  padding-left: calc(22px + env(safe-area-inset-left));
+}
+
+.hidden {
+  display: none !important;
 }
 
 .header {
