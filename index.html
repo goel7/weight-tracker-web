@@ -120,7 +120,7 @@
         </section>
 
         <!-- CHART -->
-        <section class="card">
+        <section class="card chartCard">
           <div class="card-title">
             <div>
               <h2>Trend</h2>
@@ -139,6 +139,11 @@
             </div>
 
             <div class="right">
+              <div class="avgBlock">
+                <div class="tiny muted">7-day avg</div>
+                <div id="avg7Text" class="big mono">—</div>
+              </div>
+
               <div class="rangeBar" role="tablist" aria-label="Time range">
                 <button
                   class="rangeBtn"
@@ -199,9 +204,6 @@
                   All
                 </button>
               </div>
-
-              <div class="tiny muted">7-day avg</div>
-              <div id="avg7Text" class="big mono">—</div>
             </div>
           </div>
 

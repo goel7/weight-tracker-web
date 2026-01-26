@@ -224,6 +224,33 @@ h1 {
   outline-offset: 2px;
 }
 
+/* tighter chart card spacing */
+.chartCard {
+  padding-top: 12px; /* less air above "Trend" */
+  padding-bottom: 12px;
+}
+
+.chartCard .card-title {
+  margin-bottom: 6px; /* bring chart closer to header area */
+}
+
+.chartCard .toggles {
+  margin-top: 6px; /* reduce gap under Trend title */
+}
+
+.avgBlock {
+  margin-bottom: 6px; /* small separation before the range bar */
+}
+
+.rangeBar {
+  margin-bottom: 4px; /* less empty space before the canvas */
+}
+
+/* optional: pull the canvas up a tiny bit */
+.chartCard .chartWrap {
+  margin-top: -2px;
+}
+
 /* ---- Cards ---- */
 .card {
   background: var(--card);
