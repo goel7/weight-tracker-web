@@ -307,6 +307,12 @@ tabButtons.forEach((btn) => {
 });
 
 // render
+function addDays(dateObj, days) {
+  const d = new Date(dateObj);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
 function renderChart() {
   const points = computePoints(weights);
   const domain = yAxisDomain(points);
@@ -315,9 +321,41 @@ function renderChart() {
     ? fmt2(points[points.length - 1].avg7)
     : "—";
 
-  const labels = points.map((p) => p.date.toISOString().slice(0, 10));
-  const wData = points.map((p) => p.weight);
-  const aData = points.map((p) => p.avg7);
+  // If no data, render empty chart
+  if (!points.length) {
+    const ctx = document.getElementById("chart");
+    if (chart) chart.destroy();
+    chart = new Chart(ctx, {
+      type: "line",
+      data: { labels: [], datasets: [] },
+      options: { responsive: true, maintainAspectRatio: false },
+    });
+    applyChartVisibility?.();
+    return;
+  }
+
+  // 1) Build continuous daily labels from min -> max date
+  const minDate = points[0].date;
+  const maxDate = points[points.length - 1].date;
+
+  const labels = [];
+  for (let d = new Date(minDate); d <= maxDate; d.setDate(d.getDate() + 1)) {
+    labels.push(d.toISOString().slice(0, 10));
+  }
+
+  // 2) Map existing points by date
+  const byDate = new Map(
+    points.map((p) => [p.date.toISOString().slice(0, 10), p])
+  );
+
+  // 3) Build datasets aligned to ALL days (missing = null)
+  const wData = labels.map((iso) =>
+    byDate.has(iso) ? byDate.get(iso).weight : null
+  );
+
+  const aData = labels.map((iso) =>
+    byDate.has(iso) ? byDate.get(iso).avg7 : null
+  );
 
   const ctx = document.getElementById("chart");
   if (chart) chart.destroy();
@@ -327,14 +365,30 @@ function renderChart() {
     data: {
       labels,
       datasets: [
-        { label: "Weight", data: wData, tension: 0 },
-        { label: "7-day avg", data: aData, tension: 0, borderDash: [6, 4] },
+        {
+          label: "Weight",
+          data: wData,
+          tension: 0,
+          spanGaps: true, // 🔑 CONNECT ACROSS MISSING DAYS
+        },
+        {
+          label: "7-day avg",
+          data: aData,
+          tension: 0,
+          borderDash: [6, 4],
+          spanGaps: true, // 🔑 CONNECT ACROSS MISSING DAYS
+        },
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      scales: { y: { min: domain.min, max: domain.max } },
+      scales: {
+        y: {
+          min: domain.min,
+          max: domain.max,
+        },
+      },
     },
   });
 
