@@ -41,7 +41,9 @@ const weeklyBody = document.getElementById("weeklyBody");
 const entriesTab = document.getElementById("entriesTab");
 const weeklyTab = document.getElementById("weeklyTab");
 const tabButtons = Array.from(document.querySelectorAll(".tab"));
+const rangeButtons = Array.from(document.querySelectorAll(".rangeBtn"));
 
+let selectedRange = "ytd"; // default
 let weights = [];
 let chart = null;
 
@@ -92,8 +94,65 @@ function applyChartVisibility() {
   chart.update();
 }
 
+function setActiveRange(range) {
+  selectedRange = range;
+
+  rangeButtons.forEach((btn) => {
+    const isActive = btn.dataset.range === range;
+    btn.classList.toggle("active", isActive);
+    btn.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
+
+  renderChart();
+}
+
+rangeButtons.forEach((btn) => {
+  btn.addEventListener("click", () => setActiveRange(btn.dataset.range));
+});
+
 toggleWeight?.addEventListener("change", applyChartVisibility);
 toggleAvg7?.addEventListener("change", applyChartVisibility);
+
+function startOfMonth(d) {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+function startOfYear(d) {
+  return new Date(d.getFullYear(), 0, 1);
+}
+
+function filterByTimeframe(rows, tf) {
+  if (!rows?.length) return rows;
+
+  const sorted = [...rows].sort((a, b) =>
+    a.entry_date.localeCompare(b.entry_date)
+  );
+  if (tf === "all") return sorted;
+
+  const today = new Date();
+  let start;
+
+  if (tf === "mtd") start = startOfMonth(today);
+  else if (tf === "ytd") start = startOfYear(today);
+  else {
+    const days = Number(tf.replace("d", "")); // "30d" -> 30
+    start = new Date(today);
+    start.setDate(start.getDate() - days + 1);
+  }
+
+  // compare using ISO strings (safe because your entry_date is YYYY-MM-DD)
+  const startISO = start.toISOString().slice(0, 10);
+  return sorted.filter((r) => r.entry_date >= startISO);
+}
+
+const fmtShort = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+});
+function formatTickLabel(iso) {
+  // iso is "YYYY-MM-DD"
+  const d = parseISO(iso);
+  return fmtShort.format(d); // "Jan 25"
+}
 
 function computePoints(rows) {
   const sorted = [...rows].sort((a, b) =>
@@ -314,7 +373,11 @@ function addDays(dateObj, days) {
 }
 
 function renderChart() {
-  const points = computePoints(weights);
+  // timeframe applies to chart only
+  const tf = selectedRange || "ytd";
+  const rowsForChart = filterByTimeframe(weights, tf);
+
+  const points = computePoints(rowsForChart);
   const domain = yAxisDomain(points);
 
   avg7Text.textContent = points.length
@@ -334,7 +397,7 @@ function renderChart() {
     return;
   }
 
-  // 1) Build continuous daily labels from min -> max date
+  // Build continuous daily labels from min -> max date (keeps spacing realistic)
   const minDate = points[0].date;
   const maxDate = points[points.length - 1].date;
 
@@ -343,16 +406,14 @@ function renderChart() {
     labels.push(d.toISOString().slice(0, 10));
   }
 
-  // 2) Map existing points by date
   const byDate = new Map(
     points.map((p) => [p.date.toISOString().slice(0, 10), p])
   );
 
-  // 3) Build datasets aligned to ALL days (missing = null)
+  // missing days become null, but we CONNECT the line across gaps
   const wData = labels.map((iso) =>
     byDate.has(iso) ? byDate.get(iso).weight : null
   );
-
   const aData = labels.map((iso) =>
     byDate.has(iso) ? byDate.get(iso).avg7 : null
   );
@@ -360,53 +421,54 @@ function renderChart() {
   const ctx = document.getElementById("chart");
   if (chart) chart.destroy();
 
+  const isPhone = window.innerWidth < 480;
+
   chart = new Chart(ctx, {
     type: "line",
     data: {
       labels,
       datasets: [
-        {
-          label: "Weight",
-          data: wData,
-          tension: 0,
-          spanGaps: true, // 🔑 CONNECT ACROSS MISSING DAYS
-        },
+        { label: "Weight", data: wData, tension: 0, spanGaps: true },
         {
           label: "7-day avg",
           data: aData,
           tension: 0,
           borderDash: [6, 4],
-          spanGaps: true, // 🔑 CONNECT ACROSS MISSING DAYS
+          spanGaps: true,
         },
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-
       layout: {
         padding: {
-          left: window.innerWidth < 480 ? 4 : 12,
-          right: window.innerWidth < 480 ? 6 : 12,
+          left: isPhone ? 0 : 10, // tighter on phone
+          right: isPhone ? 4 : 12,
           top: 8,
-          bottom: 4,
+          bottom: 2,
         },
       },
-
       scales: {
         y: {
-          min: domain.min,
-          max: domain.max,
+          suggestedMin: domain.min,
+          suggestedMax: domain.max,
           ticks: {
-            padding: window.innerWidth < 480 ? 4 : 10, // 👈 BIG WIN
-            maxTicksLimit: window.innerWidth < 480 ? 5 : 7,
+            stepSize: 5,
+            padding: isPhone ? 0 : 8, // tighter on phone
+          },
+          grid: {
+            drawBorder: false,
           },
         },
         x: {
           ticks: {
-            maxRotation: 45,
-            minRotation: 45,
-            padding: window.innerWidth < 480 ? 4 : 8,
+            autoSkip: true,
+            maxTicksLimit: isPhone ? 5 : 8,
+            maxRotation: 0, // ✅ no slant
+            minRotation: 0, // ✅ no slant
+            padding: isPhone ? 2 : 6,
+            callback: (val) => formatTickLabel(labels[val]), // ✅ "Jan 25"
           },
         },
       },

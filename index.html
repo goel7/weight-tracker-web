@@ -124,6 +124,7 @@
           <div class="card-title">
             <div>
               <h2>Trend</h2>
+
               <div class="toggles" role="group" aria-label="Chart toggles">
                 <label class="pillToggle">
                   <input id="toggleWeight" type="checkbox" checked />
@@ -138,10 +139,72 @@
             </div>
 
             <div class="right">
+              <div class="rangeBar" role="tablist" aria-label="Time range">
+                <button
+                  class="rangeBtn"
+                  data-range="mtd"
+                  role="tab"
+                  aria-selected="false"
+                >
+                  MTD
+                </button>
+                <span class="rangeSep" aria-hidden="true"></span>
+
+                <button
+                  class="rangeBtn"
+                  data-range="30d"
+                  role="tab"
+                  aria-selected="false"
+                >
+                  1M
+                </button>
+                <span class="rangeSep" aria-hidden="true"></span>
+
+                <button
+                  class="rangeBtn"
+                  data-range="90d"
+                  role="tab"
+                  aria-selected="false"
+                >
+                  3M
+                </button>
+                <span class="rangeSep" aria-hidden="true"></span>
+
+                <button
+                  class="rangeBtn active"
+                  data-range="ytd"
+                  role="tab"
+                  aria-selected="true"
+                >
+                  YTD
+                </button>
+                <span class="rangeSep" aria-hidden="true"></span>
+
+                <button
+                  class="rangeBtn"
+                  data-range="365d"
+                  role="tab"
+                  aria-selected="false"
+                >
+                  1Y
+                </button>
+                <span class="rangeSep" aria-hidden="true"></span>
+
+                <button
+                  class="rangeBtn"
+                  data-range="all"
+                  role="tab"
+                  aria-selected="false"
+                >
+                  All
+                </button>
+              </div>
+
               <div class="tiny muted">7-day avg</div>
               <div id="avg7Text" class="big mono">—</div>
             </div>
           </div>
+
           <div class="chartWrap">
             <canvas id="chart"></canvas>
           </div>

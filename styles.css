@@ -92,6 +92,71 @@ h1 {
   color: var(--muted);
 }
 
+/* ---- Trend controls ---- */
+
+/* ---- Range bar (stocks-style) ---- */
+.rangeBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 10px;
+  user-select: none;
+}
+
+/* thin vertical separators like finance charts */
+.rangeSep {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.rangeBtn {
+  background: transparent;
+  border: 0;
+  padding: 6px 2px;
+  color: rgba(245, 245, 247, 0.6);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  position: relative;
+  transition: 160ms ease;
+}
+
+.rangeBtn:hover {
+  color: rgba(245, 245, 247, 0.85);
+}
+
+/* underline + brighter like stock UI */
+.rangeBtn.active {
+  color: var(--text);
+}
+
+.rangeBtn.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(10, 132, 255, 0.65);
+}
+
+/* mobile: allow horizontal scroll if it wraps */
+@media (max-width: 520px) {
+  .rangeBar {
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .rangeBar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* ---- Chart toggles ---- */
 
 .toggles {
@@ -452,4 +517,68 @@ input[type="date"] {
 .card {
   position: relative;
   overflow: hidden;
+}
+
+/* ---- Trend header responsiveness ---- */
+
+/* allow the left + right areas to wrap nicely */
+.card-title {
+  flex-wrap: wrap;
+}
+
+/* keep pills from splitting text like "7-day avg" */
+.pillToggle span {
+  white-space: nowrap;
+}
+
+/* phone layout */
+@media (max-width: 520px) {
+  .card-title {
+    flex-direction: row; /* keep left + right on the same row */
+    align-items: flex-start;
+    flex-wrap: wrap; /* allow the range bar to wrap down */
+    gap: 12px;
+  }
+
+  /* keep the "right" stats pinned to the right */
+  .right {
+    margin-left: auto;
+    text-align: right;
+    min-width: 110px; /* prevents it from collapsing under */
+  }
+
+  /* toggles stay on one row, scroll if needed */
+  .toggles {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 8px;
+  }
+  .toggles::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pillToggle span {
+    white-space: nowrap;
+  }
+
+  .pillToggle {
+    padding: 7px 10px;
+  }
+
+  /* range bar goes UNDER the toggles, not competing for width */
+  .rangeBar {
+    order: 3; /* push it after toggles + right stats */
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-top: 6px;
+    margin-bottom: 0;
+  }
+  .rangeBar::-webkit-scrollbar {
+    display: none;
+  }
 }
