@@ -383,10 +383,31 @@ function renderChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+
+      layout: {
+        padding: {
+          left: window.innerWidth < 480 ? 4 : 12,
+          right: window.innerWidth < 480 ? 6 : 12,
+          top: 8,
+          bottom: 4,
+        },
+      },
+
       scales: {
         y: {
           min: domain.min,
           max: domain.max,
+          ticks: {
+            padding: window.innerWidth < 480 ? 4 : 10, // 👈 BIG WIN
+            maxTicksLimit: window.innerWidth < 480 ? 5 : 7,
+          },
+        },
+        x: {
+          ticks: {
+            maxRotation: 45,
+            minRotation: 45,
+            padding: window.innerWidth < 480 ? 4 : 8,
+          },
         },
       },
     },
