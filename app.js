@@ -48,6 +48,9 @@ let selectedRange = "ytd";
 let weights = [];
 let chart = null;
 
+// Persist legend visibility across chart rebuilds (timeframe changes, resize, etc.)
+let datasetVisible = [true, true]; // [Weight, 7-day avg]
+
 // -------------------- Helpers --------------------
 function showBanner(msg) {
   bannerText.textContent = msg;
@@ -439,16 +442,16 @@ function renderLegendPills(c) {
     pill.appendChild(label);
 
     pill.addEventListener("click", () => {
-      const nowVisible = c.isDatasetVisible(i);
-      c.setDatasetVisibility(i, !nowVisible);
+      datasetVisible[i] = !datasetVisible[i]; // store desired state
+      c.setDatasetVisibility(i, datasetVisible[i]); // apply to current chart
       c.update();
 
-      const v0 = c.isDatasetVisible(0);
-      const v1 = c.isDatasetVisible(1);
+      const v0 = datasetVisible[0];
+      const v1 = datasetVisible[1];
       if (!v0 && !v1) showBanner("Click “Weight” or “7-day avg” to show data.");
       else clearBanner();
 
-      renderLegendPills(c);
+      renderLegendPills(c); // re-render pills to reflect state
     });
 
     host.appendChild(pill);
@@ -501,6 +504,10 @@ function renderChart() {
   const aData = labels.map((iso) =>
     byDate.has(iso) ? byDate.get(iso).avg7 : null
   );
+
+  if (chart) {
+    datasetVisible = [chart.isDatasetVisible(0), chart.isDatasetVisible(1)];
+  }
 
   if (chart) chart.destroy();
 
@@ -604,6 +611,11 @@ function renderChart() {
       },
     },
   });
+
+  // ✅ re-apply visibility after rebuild
+  chart.setDatasetVisibility(0, datasetVisible[0]);
+  chart.setDatasetVisibility(1, datasetVisible[1]);
+  chart.update("none"); // fast update, no animation
 
   renderLegendPills(chart);
 
