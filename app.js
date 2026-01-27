@@ -122,6 +122,16 @@ function formatTickLabel(iso) {
   return fmtShort.format(parseISO(iso));
 }
 
+const fmtLong = new Intl.DateTimeFormat(undefined, {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+
+function formatDisplayDate(iso) {
+  return fmtLong.format(parseISO(iso));
+}
+
 function computePoints(rows) {
   const sorted = [...rows].sort((a, b) =>
     a.entry_date.localeCompare(b.entry_date)
@@ -613,7 +623,7 @@ function renderEntries() {
     const tr = document.createElement("tr");
 
     const tdDate = document.createElement("td");
-    tdDate.textContent = r.entry_date;
+    tdDate.textContent = formatDisplayDate(r.entry_date);
 
     const tdWeight = document.createElement("td");
     tdWeight.textContent = fmt2(r.weight);
@@ -653,9 +663,11 @@ function renderWeekly() {
 
   for (const w of weeks) {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${w.weekStart}</td><td class="mono">${fmt2(
-      w.avg
-    )}</td><td>${w.count}</td>`;
+    tr.innerHTML = `
+      <td>${formatDisplayDate(w.weekStart)}</td>
+      <td class="mono">${fmt2(w.avg)}</td>
+      <td>${w.count}</td>
+    `;
     weeklyBody.appendChild(tr);
   }
 }
