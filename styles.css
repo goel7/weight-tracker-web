@@ -266,7 +266,7 @@ input:focus {
 
 /* chart card layout (matches your sketch) */
 .chartCard {
-  padding-top: 12px; /* less air above Trend */
+  padding-top: 20px; /* less air above Trend */
   padding-bottom: 12px;
 }
 
@@ -304,9 +304,7 @@ input:focus {
   justify-content: center;
   gap: 12px;
   user-select: none;
-
-  /* ✅ more room under the underline on desktop */
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 /* phone stays tighter */
@@ -359,6 +357,19 @@ input:focus {
   margin-top: 0; /* tighten distance */
 }
 
+/* Desktop: give the chart more vertical presence */
+@media (min-width: 600px) {
+  .chartWrap {
+    height: 360px;
+  }
+}
+
+@media (min-width: 900px) {
+  .chartWrap {
+    height: 400px;
+  }
+}
+
 /* phone */
 @media (max-width: 520px) {
   .trendTitle {
@@ -375,12 +386,14 @@ input:focus {
 
   /* range bar scrolls instead of breaking UI */
   .rangeBar {
-    justify-content: flex-start;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 2px;
+    justify-content: center; /* center like desktop */
+    flex-wrap: wrap; /* wrap instead of scroll */
+    overflow-x: visible; /* remove scroll */
+    gap: 12px;
+    padding-bottom: 0;
+    margin-bottom: 12px; /* keep your tighter phone spacing */
   }
+
   .rangeBar::-webkit-scrollbar {
     display: none;
   }
@@ -456,9 +469,10 @@ input[type="date"] {
   min-width: 0;
 }
 
-/* ---------- Log weight card: reduce top padding like Trend ---------- */
+/* ---------- Log weight card: modify top padding like Trend ---------- */
 #app > section.card:first-of-type {
-  padding-top: 12px;
+  padding-top: 20px;
+  padding-bottom: 22px;
 }
 #app > section.card:first-of-type .card-title {
   margin-bottom: 8px;
@@ -516,17 +530,22 @@ input[type="date"] {
 /* phone: allow horizontal scroll if needed */
 @media (max-width: 520px) {
   .legendPills {
-    justify-content: flex-start;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    justify-content: center; /* center on phone */
+    flex-wrap: wrap; /* wrap instead of scrolling */
+    overflow-x: visible; /* no scroll */
     gap: 8px;
+    margin-left: auto;
+    margin-right: auto;
   }
-  .legendPills::-webkit-scrollbar {
-    display: none;
-  }
+
   .legendPill {
     white-space: nowrap;
     padding: 7px 10px;
+  }
+}
+
+@media (max-width: 520px) {
+  .rangeBtn.active::after {
+    display: none; /* ❌ remove blue underline on phone */
   }
 }

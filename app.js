@@ -44,7 +44,7 @@ const bannerText = document.getElementById("bannerText");
 const bannerClose = document.getElementById("bannerClose");
 
 // -------------------- State --------------------
-let selectedRange = "ytd"; // default
+let selectedRange = "ytd";
 let weights = [];
 let chart = null;
 
@@ -53,25 +53,36 @@ function showBanner(msg) {
   bannerText.textContent = msg;
   banner.classList.remove("hidden");
 }
-
 function clearBanner() {
   banner.classList.add("hidden");
   bannerText.textContent = "";
 }
-
 bannerClose.addEventListener("click", clearBanner);
 
 function isoToday() {
   return new Date().toISOString().slice(0, 10);
 }
-
 function parseISO(s) {
   const [y, m, d] = s.split("-").map(Number);
   return new Date(y, m - 1, d);
 }
-
 function fmt2(x) {
   return Number(x).toFixed(2);
+}
+
+function niceStep(minY, maxY) {
+  const r = Math.max(0.0001, maxY - minY);
+  const raw = r / 5; // target ~5 intervals
+  const pow10 = Math.pow(10, Math.floor(Math.log10(raw)));
+  const n = raw / pow10;
+
+  let mult;
+  if (n <= 1) mult = 1;
+  else if (n <= 2) mult = 2;
+  else if (n <= 5) mult = 5;
+  else mult = 10;
+
+  return mult * pow10;
 }
 
 function startOfMonth(d) {
@@ -108,7 +119,7 @@ const fmtShort = new Intl.DateTimeFormat(undefined, {
   day: "numeric",
 });
 function formatTickLabel(iso) {
-  return fmtShort.format(parseISO(iso)); // "Jan 25"
+  return fmtShort.format(parseISO(iso));
 }
 
 function computePoints(rows) {
@@ -122,6 +133,7 @@ function computePoints(rows) {
     seen.push(Number(r.weight));
     const last7 = seen.slice(-7);
     const avg7 = last7.reduce((s, v) => s + v, 0) / last7.length;
+
     pts.push({
       iso: r.entry_date,
       weight: Number(r.weight),
@@ -131,23 +143,42 @@ function computePoints(rows) {
   return pts;
 }
 
+// ✅ Tight domain (no expanding to 145–165)
+// We hide labels near min/max via tick callback
 function yAxisDomain(points) {
-  if (!points.length) return { min: 0, max: 1 };
-  const ys = points.flatMap((p) => [p.weight, p.avg7]);
-  let minY = Math.min(...ys);
-  let maxY = Math.max(...ys);
+  if (!points.length) return { min: 0, max: 1, rawMin: 0, rawMax: 1, step: 5 };
 
-  const range = Math.max(0.1, maxY - minY);
-  const pad = Math.max(5.0, range * 0.1);
+  const ys = points.flatMap((p) => [p.weight, p.avg7]).filter(Number.isFinite);
+  let rawMin = Math.min(...ys);
+  let rawMax = Math.max(...ys);
 
-  minY = Math.floor(minY - pad);
-  maxY = Math.ceil(maxY + pad);
-
-  if (minY === maxY) {
-    minY -= 5;
-    maxY += 5;
+  if (rawMin === rawMax) {
+    rawMin -= 1;
+    rawMax += 1;
   }
-  return { min: minY, max: maxY };
+
+  const rawSpan = rawMax - rawMin;
+
+  // Choose tick step (lbs)
+  // Keep 5 most of the time, but if range is super tiny, use 1 or 2.
+  let step = 5;
+  if (rawSpan < 2) step = 1;
+  else if (rawSpan < 6) step = 2;
+
+  // Padding so it doesn't look insanely zoomed in
+  const pad = Math.max(rawSpan * 0.75, step * 0.35);
+
+  let min = rawMin - pad;
+  let max = rawMax + pad;
+
+  // If the span is small, it's nice to snap out to clean tick boundaries
+  // (but we avoid doing this on big spans because that's when you got 145–165).
+  if (rawSpan < step * 2) {
+    min = Math.min(min, Math.floor(rawMin / step) * step);
+    max = Math.max(max, Math.ceil(rawMax / step) * step);
+  }
+
+  return { rawMin, rawMax, min, max, step };
 }
 
 function weekStartISO(dateObj) {
@@ -160,6 +191,7 @@ function weekStartISO(dateObj) {
 
 function weeklyAverages(rows) {
   const buckets = new Map();
+
   for (const r of rows) {
     const ws = weekStartISO(parseISO(r.entry_date));
     if (!buckets.has(ws)) buckets.set(ws, []);
@@ -171,29 +203,9 @@ function weeklyAverages(rows) {
     const avg = vals.reduce((s, v) => s + v, 0) / vals.length;
     arr.push({ weekStart: ws, avg, count: vals.length });
   }
+
   arr.sort((a, b) => b.weekStart.localeCompare(a.weekStart));
   return arr;
-}
-
-// -------------------- Chart: clickable legend toggles --------------------
-function chartLegendClickHandler(e, legendItem, legend) {
-  // Chart.js default behavior toggles dataset visibility but we also
-  // show a helpful message if both are hidden.
-  const idx = legendItem.datasetIndex;
-  const c = legend.chart;
-
-  const currentlyVisible = c.isDatasetVisible(idx);
-  c.setDatasetVisibility(idx, !currentlyVisible);
-  c.update();
-
-  const vis0 = c.isDatasetVisible(0);
-  const vis1 = c.isDatasetVisible(1);
-
-  if (!vis0 && !vis1) {
-    showBanner("Click “Weight” or “7-day avg” above the chart to show data.");
-  } else {
-    clearBanner();
-  }
 }
 
 // -------------------- Ranges --------------------
@@ -336,11 +348,11 @@ function syncEditorToSelectedDate() {
   const existing = weights.find((w) => w.entry_date === d);
   weightInput.value = existing ? String(existing.weight) : "";
 }
-
 dateInput.addEventListener("change", syncEditorToSelectedDate);
 
 saveBtn.addEventListener("click", async () => {
   clearBanner();
+
   const d = dateInput.value;
   const w = Number(weightInput.value);
 
@@ -369,10 +381,10 @@ tabButtons.forEach((btn) => {
   });
 });
 
+// -------------------- Legend pills (external) --------------------
 function ensureLegendHost(ctxCanvas) {
-  // Put legend pills BETWEEN rangeBar and chartWrap (matches your sketch)
   const chartWrap = ctxCanvas.parentElement; // .chartWrap
-  const chartCard = chartWrap.closest(".chartCard");
+  const chartCard = chartWrap?.closest(".chartCard");
   if (!chartCard) return null;
 
   let host = chartCard.querySelector("#legendPills");
@@ -380,13 +392,7 @@ function ensureLegendHost(ctxCanvas) {
     host = document.createElement("div");
     host.id = "legendPills";
     host.className = "legendPills";
-
-    const rangeBar = chartCard.querySelector(".rangeBar");
-    if (rangeBar && rangeBar.nextSibling) {
-      chartCard.insertBefore(host, chartWrap); // default: right before chartWrap
-    } else {
-      chartCard.insertBefore(host, chartWrap);
-    }
+    chartCard.insertBefore(host, chartWrap); // directly above the canvas
   }
   return host;
 }
@@ -400,7 +406,6 @@ function renderLegendPills(c) {
   c.data.datasets.forEach((ds, i) => {
     const visible = c.isDatasetVisible(i);
 
-    // Try to infer the dataset color from Chart.js (auto colors included)
     const meta = c.getDatasetMeta(i);
     const stroke =
       ds.borderColor ||
@@ -414,7 +419,6 @@ function renderLegendPills(c) {
 
     const dot = document.createElement("span");
     dot.className = "legendDot";
-    dot.style.color = stroke; // border color
     dot.style.borderColor = stroke;
     dot.style.background = visible ? stroke + "33" : "rgba(0,0,0,0.15)";
 
@@ -431,14 +435,9 @@ function renderLegendPills(c) {
 
       const v0 = c.isDatasetVisible(0);
       const v1 = c.isDatasetVisible(1);
+      if (!v0 && !v1) showBanner("Click “Weight” or “7-day avg” to show data.");
+      else clearBanner();
 
-      if (!v0 && !v1) {
-        showBanner("Click “Weight” or “7-day avg” to show data.");
-      } else {
-        clearBanner();
-      }
-
-      // Re-render pills to reflect on/off states
       renderLegendPills(c);
     });
 
@@ -453,6 +452,7 @@ function renderChart() {
 
   const points = computePoints(rowsForChart);
   const domain = yAxisDomain(points);
+  const step = domain.step;
 
   avg7Text.textContent = points.length
     ? fmt2(points[points.length - 1].avg7)
@@ -460,7 +460,6 @@ function renderChart() {
 
   const ctx = document.getElementById("chart");
 
-  // No data: empty chart
   if (!points.length) {
     if (chart) chart.destroy();
     chart = new Chart(ctx, {
@@ -469,13 +468,12 @@ function renderChart() {
       options: { responsive: true, maintainAspectRatio: false },
     });
 
-    // Clear legend pills host if it exists
     const host = ensureLegendHost(ctx);
     if (host) host.innerHTML = "";
     return;
   }
 
-  // Build continuous daily labels from min -> max
+  // continuous labels from min -> max
   const minISO = points[0].iso;
   const maxISO = points[points.length - 1].iso;
   const minDate = parseISO(minISO);
@@ -528,21 +526,17 @@ function renderChart() {
       responsive: true,
       maintainAspectRatio: false,
 
-      // ✅ this is chart-area padding (not legend)
-      // keeping it tight so we don't reintroduce fluff
       layout: {
         padding: {
           left: isPhone ? 2 : 8,
           right: isPhone ? 6 : 10,
           top: 6,
-          bottom: 2,
+          bottom: 10,
         },
       },
 
       plugins: {
-        // ✅ turn OFF built-in legend (we render our own pill legend)
         legend: { display: false },
-
         tooltip: {
           callbacks: {
             title: (items) => {
@@ -555,18 +549,33 @@ function renderChart() {
 
       scales: {
         y: {
-          suggestedMin: domain.min,
-          suggestedMax: domain.max,
+          min: domain.min,
+          max: domain.max,
+
+          // Force clean tick values (150, 155, 160...) without showing raw min/max like 147/161
+          afterBuildTicks: (scale) => {
+            const step = domain.step;
+            const start = Math.ceil(scale.min / step) * step;
+            const end = Math.floor(scale.max / step) * step;
+
+            const ticks = [];
+            for (let v = start; v <= end + 1e-9; v += step) {
+              ticks.push({ value: v });
+            }
+            scale.ticks = ticks;
+          },
+
           ticks: {
-            stepSize: 5,
-            padding: isPhone ? 2 : 8,
+            callback: (v) => Number(v).toFixed(0), // show as integers
             color: "rgba(245,245,247,0.55)",
           },
+
           grid: {
-            color: "rgba(255,255,255,0.06)",
+            color: "rgba(255,255,255,0.04)",
             drawBorder: false,
           },
         },
+
         x: {
           ticks: {
             autoSkip: true,
@@ -586,10 +595,8 @@ function renderChart() {
     },
   });
 
-  // ✅ build pill legend and spacing is handled by CSS margins
   renderLegendPills(chart);
 
-  // If user managed to hide both, show message
   const v0 = chart.isDatasetVisible(0);
   const v1 = chart.isDatasetVisible(1);
   if (!v0 && !v1) showBanner("Click “Weight” or “7-day avg” to show data.");
@@ -681,7 +688,6 @@ async function bootstrapAuthed() {
     else await setUIAuthed(false);
   });
 
-  // optional: if you resize, re-render to adjust padding/ticks
   window.addEventListener("resize", () => {
     if (!app.classList.contains("hidden")) renderChart();
   });
