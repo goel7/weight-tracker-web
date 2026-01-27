@@ -7,7 +7,6 @@
   --blue: #0a84ff;
   --red: #ff3b30;
 
-  /* layout knobs */
   --container-max: 920px;
   --auth-max: 560px;
   --radius: 16px;
@@ -35,7 +34,7 @@ body {
   background: transparent;
 }
 
-/* fixes the notch black area */
+/* bg */
 .bg {
   position: fixed;
   inset: 0;
@@ -57,11 +56,10 @@ body {
   background-size: cover;
 }
 
-/* ---- Layout ---- */
+/* layout */
 .container {
   max-width: var(--container-max);
   margin: 0 auto;
-
   padding-top: calc(22px + env(safe-area-inset-top));
   padding-right: calc(22px + env(safe-area-inset-right));
   padding-bottom: calc(22px + env(safe-area-inset-bottom));
@@ -92,166 +90,7 @@ h1 {
   color: var(--muted);
 }
 
-/* ---- Trend controls ---- */
-
-/* ---- Range bar (stocks-style) ---- */
-.rangeBar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-bottom: 10px;
-  user-select: none;
-}
-
-/* thin vertical separators like finance charts */
-.rangeSep {
-  width: 1px;
-  height: 18px;
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.rangeBtn {
-  background: transparent;
-  border: 0;
-  padding: 6px 2px;
-  color: rgba(245, 245, 247, 0.6);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  position: relative;
-  transition: 160ms ease;
-}
-
-.rangeBtn:hover {
-  color: rgba(245, 245, 247, 0.85);
-}
-
-/* underline + brighter like stock UI */
-.rangeBtn.active {
-  color: var(--text);
-}
-
-.rangeBtn.active::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -6px;
-  height: 3px;
-  border-radius: 999px;
-  background: rgba(10, 132, 255, 0.65);
-}
-
-/* mobile: allow horizontal scroll if it wraps */
-@media (max-width: 520px) {
-  .rangeBar {
-    justify-content: flex-start;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .rangeBar::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-/* ---- Chart toggles ---- */
-
-.toggles {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-  flex-wrap: wrap;
-}
-
-/* pill toggle */
-.pillToggle {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--stroke);
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--muted);
-  cursor: pointer;
-  user-select: none;
-  transition: 160ms ease;
-}
-
-.pillToggle:hover {
-  background: rgba(255, 255, 255, 0.09);
-  color: var(--text);
-}
-
-/* hide the ugly native checkbox */
-.pillToggle input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* little indicator dot (matches glass vibe) */
-.pillToggle span::before {
-  content: "";
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(0, 0, 0, 0.25);
-  display: inline-block;
-  margin-right: 8px;
-  transform: translateY(1px);
-}
-
-/* ON state */
-.pillToggle input:checked + span {
-  color: var(--text);
-}
-
-.pillToggle input:checked + span::before {
-  background: rgba(10, 132, 255, 0.35);
-  border-color: rgba(10, 132, 255, 0.45);
-}
-
-/* keyboard focus */
-.pillToggle:has(input:focus-visible) {
-  outline: 2px solid rgba(10, 132, 255, 0.35);
-  outline-offset: 2px;
-}
-
-/* tighter chart card spacing */
-.chartCard {
-  padding-top: 12px; /* less air above "Trend" */
-  padding-bottom: 12px;
-}
-
-.chartCard .card-title {
-  margin-bottom: 6px; /* bring chart closer to header area */
-}
-
-.chartCard .toggles {
-  margin-top: 6px; /* reduce gap under Trend title */
-}
-
-.avgBlock {
-  margin-bottom: 6px; /* small separation before the range bar */
-}
-
-.rangeBar {
-  margin-bottom: 4px; /* less empty space before the canvas */
-}
-
-/* optional: pull the canvas up a tiny bit */
-.chartCard .chartWrap {
-  margin-top: -2px;
-}
-
-/* ---- Cards ---- */
+/* cards */
 .card {
   background: var(--card);
   border: 1px solid var(--stroke);
@@ -259,9 +98,10 @@ h1 {
   padding: 16px;
   margin-top: 14px;
   backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
 }
 
-/* Make auth feel “narrow + centered” on desktop */
 .card.authCard {
   max-width: var(--auth-max);
   margin-left: auto;
@@ -277,38 +117,25 @@ h1 {
   margin-bottom: 10px;
 }
 
-.right {
-  text-align: right;
-}
-
-.big {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.tiny {
-  font-size: 12px;
-}
-
 .muted {
   color: var(--muted);
 }
-
 .small {
   font-size: 12px;
 }
-
+.tiny {
+  font-size: 12px;
+}
 .mono {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---- Auth stack (vertical always) ---- */
+/* auth */
 .authHeader h2 {
   margin: 0 0 8px;
   font-size: 34px;
   letter-spacing: -0.02em;
 }
-
 .authHeader p {
   margin: 0;
 }
@@ -321,20 +148,7 @@ h1 {
   margin-top: 14px;
 }
 
-/* If plan to use grid2 somewhere else, keep.
-   But for auth, use .authStack for vertical. */
-.grid2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-@media (max-width: 640px) {
-  .grid2 {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ---- Inputs ---- */
+/* inputs */
 label {
   display: block;
   font-size: 12px;
@@ -346,16 +160,12 @@ input {
   display: block;
   width: 100%;
   max-width: 100%;
-  box-sizing: border-box;
-
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid var(--stroke);
   background: rgba(0, 0, 0, 0.25);
   color: var(--text);
   outline: none;
-
-  /* prevents iOS zoom + weird intrinsic sizing */
   font-size: 16px;
 }
 
@@ -364,11 +174,18 @@ input:focus {
   background: rgba(0, 0, 0, 0.32);
 }
 
-.authStack > div {
-  min-width: 0; /* allow children to shrink */
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 640px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
 }
 
-/* ---- Rows / Buttons ---- */
+/* buttons */
 .row {
   display: flex;
   align-items: center;
@@ -391,7 +208,6 @@ input:focus {
 .btn:hover {
   background: rgba(255, 255, 255, 0.11);
 }
-
 .btn:active {
   transform: translateY(1px);
 }
@@ -400,7 +216,6 @@ input:focus {
   background: rgba(10, 132, 255, 0.28);
   border-color: rgba(10, 132, 255, 0.35);
 }
-
 .btn.primary:hover {
   background: rgba(10, 132, 255, 0.34);
 }
@@ -409,11 +224,9 @@ input:focus {
   background: transparent;
 }
 
-/* Make auth buttons feel consistent */
 .authCard .btn {
   min-width: 150px;
 }
-
 @media (max-width: 420px) {
   .authCard .btn {
     min-width: 0;
@@ -424,18 +237,15 @@ input:focus {
   }
 }
 
-/* ---- Banner ---- */
+/* banner */
 .banner {
   margin-top: 12px;
   padding: 12px 16px;
   border-radius: 14px;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-
-  /* calm success / info look */
   background: rgba(255, 59, 48, 0.18);
   border: 1px solid rgba(255, 59, 48, 0.28);
   color: var(--text);
@@ -450,24 +260,133 @@ input:focus {
   cursor: pointer;
   padding: 4px;
 }
-
 #bannerClose:hover {
   color: var(--text);
 }
 
-/* ---- Chart ---- */
-.chartWrap {
-  height: 280px;
+/* chart card layout (matches your sketch) */
+.chartCard {
+  padding-top: 12px; /* less air above Trend */
+  padding-bottom: 12px;
 }
 
-@media (max-width: 480px) {
-  .chartWrap {
-    padding-left: 0;
-    padding-right: 0;
+.trendTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px; /* tighter */
+}
+
+.trendTitle {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+}
+
+.avgInline {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.avgValue {
+  font-size: 22px; /* bolder, more “finance app” */
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+/* range bar (stocks-style) */
+.rangeBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  user-select: none;
+
+  /* ✅ more room under the underline on desktop */
+  margin-bottom: 12px;
+}
+
+/* phone stays tighter */
+@media (max-width: 520px) {
+  .rangeBar {
+    margin-bottom: 6px;
   }
 }
 
-/* ---- Tabs ---- */
+.rangeSep {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.rangeBtn {
+  background: transparent;
+  border: 0;
+  padding: 6px 2px;
+  color: rgba(245, 245, 247, 0.6);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  position: relative;
+  transition: 160ms ease;
+}
+
+.rangeBtn:hover {
+  color: rgba(245, 245, 247, 0.85);
+}
+
+.rangeBtn.active {
+  color: var(--text);
+}
+.rangeBtn.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(10, 132, 255, 0.65);
+}
+
+/* chart */
+.chartWrap {
+  height: 280px;
+  margin-top: 0; /* tighten distance */
+}
+
+/* phone */
+@media (max-width: 520px) {
+  .trendTitle {
+    font-size: 26px;
+  }
+  .avgValue {
+    font-size: 20px;
+  }
+
+  /* keep top row intact: title left, avg right */
+  .trendTop {
+    margin-bottom: 4px;
+  }
+
+  /* range bar scrolls instead of breaking UI */
+  .rangeBar {
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .rangeBar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* tabs/tables */
 .tabs {
   display: flex;
   gap: 8px;
@@ -488,7 +407,6 @@ input:focus {
   border-color: rgba(10, 132, 255, 0.35);
 }
 
-/* ---- Tables ---- */
 .tableWrap {
   overflow: auto;
   border-radius: 12px;
@@ -526,12 +444,10 @@ input:focus {
   color: var(--text);
   cursor: pointer;
 }
-
 .actionBtn:hover {
   background: rgba(255, 59, 48, 0.24);
 }
 
-/* iOS Safari: <input type="date"> can ignore width and spill */
 input[type="date"] {
   -webkit-appearance: none;
   appearance: none;
@@ -540,72 +456,77 @@ input[type="date"] {
   min-width: 0;
 }
 
-/* Clip any last-pixel overflow inside cards */
-.card {
-  position: relative;
-  overflow: hidden;
+/* ---------- Log weight card: reduce top padding like Trend ---------- */
+#app > section.card:first-of-type {
+  padding-top: 12px;
+}
+#app > section.card:first-of-type .card-title {
+  margin-bottom: 8px;
+}
+#app > section.card:first-of-type h2 {
+  margin: 0;
 }
 
-/* ---- Trend header responsiveness ---- */
+/* ---------- Legend pills (external HTML legend) ---------- */
+.legendPills {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 
-/* allow the left + right areas to wrap nicely */
-.card-title {
-  flex-wrap: wrap;
+  margin: 10px 0 10px; /* ✅ adds breathing room above + below legend */
+  user-select: none;
 }
 
-/* keep pills from splitting text like "7-day avg" */
-.pillToggle span {
-  white-space: nowrap;
+.legendPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--stroke);
+  background: rgba(255, 255, 255, 0.06);
+
+  color: rgba(245, 245, 247, 0.7);
+  cursor: pointer;
+  transition: 160ms ease;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
-/* phone layout */
+.legendPill:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: rgba(245, 245, 247, 0.9);
+}
+
+.legendPill.isOff {
+  opacity: 0.55;
+  filter: grayscale(0.2);
+}
+
+.legendDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* phone: allow horizontal scroll if needed */
 @media (max-width: 520px) {
-  .card-title {
-    flex-direction: row; /* keep left + right on the same row */
-    align-items: flex-start;
-    flex-wrap: wrap; /* allow the range bar to wrap down */
-    gap: 12px;
-  }
-
-  /* keep the "right" stats pinned to the right */
-  .right {
-    margin-left: auto;
-    text-align: right;
-    min-width: 110px; /* prevents it from collapsing under */
-  }
-
-  /* toggles stay on one row, scroll if needed */
-  .toggles {
-    flex-wrap: nowrap;
+  .legendPills {
+    justify-content: flex-start;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     gap: 8px;
   }
-  .toggles::-webkit-scrollbar {
+  .legendPills::-webkit-scrollbar {
     display: none;
   }
-
-  .pillToggle span {
+  .legendPill {
     white-space: nowrap;
-  }
-
-  .pillToggle {
     padding: 7px 10px;
-  }
-
-  /* range bar goes UNDER the toggles, not competing for width */
-  .rangeBar {
-    order: 3; /* push it after toggles + right stats */
-    width: 100%;
-    justify-content: flex-start;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    margin-top: 6px;
-    margin-bottom: 0;
-  }
-  .rangeBar::-webkit-scrollbar {
-    display: none;
   }
 }
