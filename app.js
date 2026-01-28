@@ -81,7 +81,7 @@ const liftRangeButtons = Array.from(
 );
 
 // -------------------- State --------------------
-let selectedRange = "ytd";
+let selectedRange = "30d";
 let weights = [];
 let chart = null;
 
@@ -90,7 +90,7 @@ let datasetVisible = [true, true]; // [Weight, 7-day avg]
 
 // ---------- Lifts state ----------
 let selectedPage = "weight";
-let selectedLiftRange = "ytd";
+let selectedLiftRange = "90d";
 
 let exercises = []; // [{ id, name }]
 let liftEntries = []; // [{ id, entry_date, exercise_id, weight, reps, sets, notes }]

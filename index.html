@@ -164,16 +164,16 @@
             <div class="rangeBar" role="tablist" aria-label="Time range">
               <button
                 class="rangeBtn"
-                data-range="mtd"
+                data-range="14d"
                 role="tab"
                 aria-selected="false"
               >
-                MTD
+                2W
               </button>
-              <span class="rangeSep" aria-hidden="true"></span>
+              <span class="rangeSep"></span>
 
               <button
-                class="rangeBtn"
+                class="rangeBtn active"
                 data-range="30d"
                 role="tab"
                 aria-selected="false"
@@ -193,7 +193,7 @@
               <span class="rangeSep" aria-hidden="true"></span>
 
               <button
-                class="rangeBtn active"
+                class="rangeBtn"
                 data-range="ytd"
                 role="tab"
                 aria-selected="true"
@@ -380,62 +380,32 @@
             </div>
 
             <div class="rangeBar" role="tablist" aria-label="Lift time range">
-              <button
-                class="liftRangeBtn rangeBtn"
-                data-range="mtd"
-                role="tab"
-                aria-selected="false"
-              >
-                MTD
-              </button>
-              <span class="rangeSep" aria-hidden="true"></span>
-
-              <button
-                class="liftRangeBtn rangeBtn"
-                data-range="30d"
-                role="tab"
-                aria-selected="false"
-              >
-                1M
-              </button>
-              <span class="rangeSep" aria-hidden="true"></span>
-
-              <button
-                class="liftRangeBtn rangeBtn"
-                data-range="90d"
-                role="tab"
-                aria-selected="false"
-              >
+              <button class="liftRangeBtn rangeBtn active" data-range="90d">
                 3M
               </button>
-              <span class="rangeSep" aria-hidden="true"></span>
+              <span class="rangeSep"></span>
 
-              <button
-                class="liftRangeBtn rangeBtn active"
-                data-range="ytd"
-                role="tab"
-                aria-selected="true"
-              >
+              <button class="liftRangeBtn rangeBtn" data-range="180d">
+                6M
+              </button>
+              <span class="rangeSep"></span>
+
+              <button class="liftRangeBtn rangeBtn" data-range="ytd">
                 YTD
               </button>
-              <span class="rangeSep" aria-hidden="true"></span>
+              <span class="rangeSep"></span>
 
-              <button
-                class="liftRangeBtn rangeBtn"
-                data-range="365d"
-                role="tab"
-                aria-selected="false"
-              >
+              <button class="liftRangeBtn rangeBtn" data-range="365d">
                 1Y
               </button>
-              <span class="rangeSep" aria-hidden="true"></span>
+              <span class="rangeSep"></span>
 
-              <button
-                class="liftRangeBtn rangeBtn"
-                data-range="all"
-                role="tab"
-                aria-selected="false"
-              >
+              <button class="liftRangeBtn rangeBtn" data-range="1825d">
+                5Y
+              </button>
+              <span class="rangeSep"></span>
+
+              <button class="liftRangeBtn rangeBtn" data-range="all">
                 All
               </button>
             </div>
