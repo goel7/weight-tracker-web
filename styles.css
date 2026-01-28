@@ -264,6 +264,18 @@ input:focus {
   color: var(--text);
 }
 
+/* Make the banner stick to the top while scrolling */
+#banner {
+  position: sticky;
+  top: calc(12px + env(safe-area-inset-top)); /* nice on iPhone notch */
+  z-index: 50; /* above cards */
+}
+
+/* optional: give it a little separation when it’s stuck */
+#banner:not(.hidden) {
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+}
+
 /* chart card layout (matches your sketch) */
 .chartCard {
   padding-top: 20px; /* less air above Trend */

@@ -373,12 +373,14 @@ function setAuthMode(mode) {
   }
 }
 
-toggleAuthBtn.addEventListener("click", () => {
+toggleAuthBtn.addEventListener("click", (e) => {
+  e.preventDefault();
   clearBanner();
   setAuthMode(authMode === "login" ? "signup" : "login");
 });
 
-primaryAuthBtn.addEventListener("click", async () => {
+primaryAuthBtn.addEventListener("click", async (e) => {
+  e.preventDefault();
   clearBanner();
 
   const email = emailEl.value.trim();
@@ -392,6 +394,7 @@ primaryAuthBtn.addEventListener("click", async () => {
   toggleAuthBtn.disabled = true;
 
   try {
+    // if Supabase project has “Confirm email” enabled, Supabase may not allow login until email is confirmed
     if (authMode === "signup") {
       const pw2 = pass2El.value;
       if (pw !== pw2) return showBanner("Passwords do not match.");
@@ -399,8 +402,14 @@ primaryAuthBtn.addEventListener("click", async () => {
       const { error } = await sb.auth.signUp({ email, password: pw });
       if (error) throw error;
 
-      showBanner("Account created. Now log in (or confirm email if required).");
-      setAuthMode("login");
+      // ✅ immediately sign in after signup
+      const { error: signInErr } = await sb.auth.signInWithPassword({
+        email,
+        password: pw,
+      });
+      if (signInErr) throw signInErr;
+
+      await bootstrapAuthed();
       return;
     }
 
