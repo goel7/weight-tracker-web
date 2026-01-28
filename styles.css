@@ -626,9 +626,26 @@ input[type="date"] {
     flex-wrap: wrap;
     justify-content: center;
   }
-  .pageNav {
-    width: 100%;
+  .headerRight {
+    flex-wrap: wrap;
     justify-content: center;
+    gap: 10px;
+  }
+
+  .pageNav {
+    width: fit-content; /* ✅ key change */
+    max-width: 92vw; /* prevent overflow */
+    padding: 5px;
+    gap: 6px;
+  }
+
+  .pageBtn {
+    padding: 8px 12px; /* slightly tighter */
+  }
+
+  /* optional: keep logout same row, not underneath */
+  #logoutBtn {
+    padding: 9px 12px;
   }
 }
 

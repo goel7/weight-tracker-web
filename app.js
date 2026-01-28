@@ -1439,9 +1439,19 @@ async function bootstrapAuthed() {
     else await setUIAuthed(false);
   });
 
+  let resizeTimer = null;
+
   window.addEventListener("resize", () => {
     if (app.classList.contains("hidden")) return;
-    if (selectedPage === "weight") renderChart();
-    else renderLiftChart();
+
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      // don’t rebuild charts; just ask Chart.js to fit the new size
+      if (selectedPage === "weight") {
+        if (chart) chart.resize();
+      } else {
+        if (liftChart) liftChart.resize();
+      }
+    }, 150);
   });
 })();
