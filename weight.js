@@ -35,6 +35,8 @@ let weights = [];
 let chart = null;
 let selectedRange = "30d";
 let datasetVisible = [true, true]; // [Weight, 7-day avg]
+let showBannerFn = null;
+let clearBannerFn = null;
 
 // Empty state helpers
 function showEmptyState(canvas, title, subtitle) {
@@ -73,6 +75,10 @@ function hideLoading(element) {
   const original = element.dataset.originalText || element.textContent;
   element.textContent = original;
   delete element.dataset.originalText;
+}
+
+function removeWeightLocal(entry_date) {
+  weights = weights.filter((w) => w.entry_date !== entry_date);
 }
 
 // Data operations
@@ -344,7 +350,7 @@ function renderChart(showBanner, clearBanner) {
 }
 
 // Table rendering
-function renderEntries(refreshAll) {
+function renderEntries() {
   const sorted = [...weights].sort((a, b) =>
     b.entry_date.localeCompare(a.entry_date),
   );
@@ -380,10 +386,18 @@ function renderEntries(refreshAll) {
       try {
         showLoading(del, "Deleting...");
         await deleteWeight(r.entry_date);
-        await refreshAll(showBanner, clearBanner);
-        showBanner("Entry deleted successfully!", "success");
+        removeWeightLocal(r.entry_date);
+        if (showBannerFn && clearBannerFn) {
+          renderChart(showBannerFn, clearBannerFn);
+        }
+        renderEntries();
+        renderWeekly();
+        syncEditorToSelectedDate();
+        if (showBannerFn)
+          showBannerFn("Entry deleted successfully!", "success");
       } catch (e) {
-        showBanner(`Delete failed: ${e.message}`, "error");
+        if (showBannerFn) showBannerFn(`Delete failed: ${e.message}`, "error");
+      } finally {
         hideLoading(del);
       }
     });
@@ -449,7 +463,7 @@ export async function refreshAll(showBanner, clearBanner) {
   try {
     weights = await fetchWeights();
     renderChart(showBanner, clearBanner);
-    renderEntries(refreshAll);
+    renderEntries();
     renderWeekly();
     syncEditorToSelectedDate();
   } catch (e) {
@@ -458,6 +472,9 @@ export async function refreshAll(showBanner, clearBanner) {
 }
 
 export function initWeightListeners(showBanner, clearBanner) {
+  showBannerFn = showBanner;
+  clearBannerFn = clearBanner;
+
   dateInput.addEventListener("change", syncEditorToSelectedDate);
 
   // Add input validation

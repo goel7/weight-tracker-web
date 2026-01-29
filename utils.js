@@ -186,9 +186,9 @@ export function liftYAxisDomain(points) {
 
   const rawSpan = rawMax - rawMin;
 
-  let step = 5;
+  let step = 10;
+  if (rawSpan < 20) step = 5;
   if (rawSpan < 10) step = 2.5;
-  if (rawSpan < 5) step = 1;
 
   const pad = Math.max(rawSpan * 0.6, step * 0.6);
 

@@ -470,6 +470,50 @@ input:focus {
   background: rgba(255, 255, 255, 0.04);
 }
 
+.noteCell {
+  position: relative;
+}
+
+.noteBtn {
+  border: 1px solid var(--stroke);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.noteBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.noteBtn.isOpen {
+  border-color: rgba(10, 132, 255, 0.45);
+  background: rgba(10, 132, 255, 0.2);
+}
+
+.notePopover {
+  position: absolute;
+  top: 32px;
+  left: 0;
+  z-index: 30;
+  min-width: 220px;
+  max-width: 320px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--stroke);
+  background: rgba(10, 10, 12, 0.95);
+  color: var(--text);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  white-space: pre-wrap;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .actionBtn {
   padding: 6px 10px;
   border-radius: 10px;

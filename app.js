@@ -36,6 +36,7 @@ const appSub = document.getElementById("appSub");
 
 // -------------------- State --------------------
 let selectedPage = "weight";
+let hasBootstrapped = false;
 
 // -------------------- Banner --------------------
 let bannerTimeout = null;
@@ -91,6 +92,8 @@ pageBtns.forEach((btn) => {
 
 // -------------------- Bootstrap --------------------
 async function bootstrapAuthed() {
+  if (hasBootstrapped) return;
+  hasBootstrapped = true;
   await setUIAuthed(true);
 
   initWeightUI();
@@ -118,6 +121,11 @@ async function bootstrapAuthed() {
 
   // Setup auth state listener
   setupAuthStateListener(bootstrapAuthed, setUIAuthed);
+
+  // reset bootstrap state when signed out
+  sb.auth.onAuthStateChange((_event, session) => {
+    if (!session) hasBootstrapped = false;
+  });
 
   // Handle window resize
   let resizeTimer = null;

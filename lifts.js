@@ -51,6 +51,8 @@ let liftChart = null;
 let selectedLiftRange = "90d";
 let showBannerFn = null;
 let clearBannerFn = null;
+let activeNotesPopover = null;
+let activeNotesButton = null;
 
 // Empty state helpers
 function showLiftEmptyState(canvas, title, subtitle) {
@@ -367,7 +369,7 @@ function renderLiftEntriesTable() {
 
   if (!exId) {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="5" class="emptyTableMessage">Select an exercise to view entries</td>`;
+    tr.innerHTML = `<td colspan="6" class="emptyTableMessage">Select an exercise to view entries</td>`;
     liftEntriesBody.appendChild(tr);
     return;
   }
@@ -379,7 +381,7 @@ function renderLiftEntriesTable() {
 
   if (rows.length === 0) {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="5" class="emptyTableMessage">No entries yet for this exercise. Start logging above!</td>`;
+    tr.innerHTML = `<td colspan="6" class="emptyTableMessage">No entries yet for this exercise. Start logging above!</td>`;
     liftEntriesBody.appendChild(tr);
     return;
   }
@@ -387,15 +389,63 @@ function renderLiftEntriesTable() {
   for (const r of rows) {
     const tr = document.createElement("tr");
 
-    tr.innerHTML = `
-      <td>${formatDisplayDate(r.entry_date)}</td>
-      <td class="mono">${fmt2(r.weight)}</td>
-      <td class="mono">${r.reps ?? "—"}</td>
-      <td class="mono">${r.sets ?? "—"}</td>
-      <td style="text-align:right"></td>
-    `;
+    const tdDate = document.createElement("td");
+    tdDate.textContent = formatDisplayDate(r.entry_date);
 
-    const tdAction = tr.lastElementChild;
+    const tdWeight = document.createElement("td");
+    tdWeight.textContent = fmt2(r.weight);
+    tdWeight.className = "mono";
+
+    const tdReps = document.createElement("td");
+    tdReps.textContent = r.reps ?? "—";
+    tdReps.className = "mono";
+
+    const tdSets = document.createElement("td");
+    tdSets.textContent = r.sets ?? "—";
+    tdSets.className = "mono";
+
+    const tdNotes = document.createElement("td");
+    const notesText = typeof r.notes === "string" ? r.notes.trim() : "";
+    tdNotes.className = "noteCell";
+
+    if (!notesText) {
+      tdNotes.textContent = "—";
+    } else {
+      const notesBtn = document.createElement("button");
+      notesBtn.type = "button";
+      notesBtn.className = "noteBtn";
+      notesBtn.innerHTML = "📝 View";
+
+      const popover = document.createElement("div");
+      popover.className = "notePopover hidden";
+      popover.textContent = notesText;
+
+      notesBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+
+        if (activeNotesPopover && activeNotesPopover !== popover) {
+          activeNotesPopover.classList.add("hidden");
+          if (activeNotesButton) activeNotesButton.classList.remove("isOpen");
+        }
+
+        const isOpen = !popover.classList.contains("hidden");
+        popover.classList.toggle("hidden", isOpen);
+        notesBtn.classList.toggle("isOpen", !isOpen);
+
+        activeNotesPopover = popover.classList.contains("hidden")
+          ? null
+          : popover;
+        activeNotesButton = popover.classList.contains("hidden")
+          ? null
+          : notesBtn;
+      });
+
+      tdNotes.appendChild(notesBtn);
+      tdNotes.appendChild(popover);
+    }
+
+    const tdAction = document.createElement("td");
+    tdAction.style.textAlign = "right";
 
     const del = document.createElement("button");
     del.textContent = "Delete";
@@ -416,6 +466,13 @@ function renderLiftEntriesTable() {
       }
     });
     tdAction.appendChild(del);
+
+    tr.appendChild(tdDate);
+    tr.appendChild(tdWeight);
+    tr.appendChild(tdReps);
+    tr.appendChild(tdSets);
+    tr.appendChild(tdNotes);
+    tr.appendChild(tdAction);
 
     tr.addEventListener("click", () => {
       liftDateInput.value = r.entry_date;
@@ -615,6 +672,21 @@ export function initLiftListeners(showBanner, clearBanner) {
   window.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && !exerciseModal.classList.contains("hidden")) {
       closeExerciseModal();
+    }
+    if (e.key === "Escape" && activeNotesPopover) {
+      activeNotesPopover.classList.add("hidden");
+      if (activeNotesButton) activeNotesButton.classList.remove("isOpen");
+      activeNotesPopover = null;
+      activeNotesButton = null;
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (activeNotesPopover && !activeNotesPopover.contains(e.target)) {
+      activeNotesPopover.classList.add("hidden");
+      if (activeNotesButton) activeNotesButton.classList.remove("isOpen");
+      activeNotesPopover = null;
+      activeNotesButton = null;
     }
   });
 
