@@ -115,10 +115,11 @@ export function initAuthListeners(showBanner, clearBanner, bootstrapAuthed) {
 
   googleSignInBtn.addEventListener("click", async () => {
     try {
+      const redirectTo = window.location.origin + window.location.pathname;
       const { error } = await sb.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: window.location.origin,
+          redirectTo,
         },
       });
       if (error) throw error;
