@@ -10,13 +10,13 @@
   "scope": "/",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230b0c10' width='192' height='192' rx='45'/><text x='96' y='138' font-size='110' font-weight='500' fill='white' text-anchor='middle' font-family='system-ui'>W</text></svg>",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%230b0c10' width='192' height='192' rx='45'/%3E%3Ctext x='96' y='138' font-size='110' font-weight='500' fill='white' text-anchor='middle' font-family='system-ui'%3EW%3C/text%3E%3C/svg%3E",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%230b0c10' width='512' height='512' rx='120'/><text x='256' y='380' font-size='320' font-weight='500' fill='white' text-anchor='middle' font-family='system-ui'>W</text></svg>",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%230b0c10' width='512' height='512' rx='120'/%3E%3Ctext x='256' y='380' font-size='320' font-weight='500' fill='white' text-anchor='middle' font-family='system-ui'%3EW%3C/text%3E%3C/svg%3E",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
