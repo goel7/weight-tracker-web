@@ -12,14 +12,24 @@ import {
   formatDisplayDate,
   computeLiftPoints,
   liftYAxisDomain,
+  uiConfirm,
+  uiPrompt,
+  getWeightUnit,
+  convertWeight,
+  getWeightLabel,
 } from "./utils.js";
 
 // UI Elements
 const liftDateInput = document.getElementById("liftDateInput");
 const liftSelectedDateText = document.getElementById("liftSelectedDateText");
 const exerciseSelect = document.getElementById("exerciseSelect");
+const exerciseCategoryFilter = document.getElementById(
+  "exerciseCategoryFilter",
+);
+const categoryPillRow = document.getElementById("categoryPillRow");
 const addExerciseBtn = document.getElementById("addExerciseBtn");
 const liftWeightInput = document.getElementById("liftWeightInput");
+const liftWeightInputLabel = document.getElementById("liftWeightInputLabel");
 const liftRepsInput = document.getElementById("liftRepsInput");
 const liftSetsInput = document.getElementById("liftSetsInput");
 const liftNotesInput = document.getElementById("liftNotesInput");
@@ -40,6 +50,8 @@ const manageExercisesBtn = document.getElementById("manageExercisesBtn");
 // Modal elements
 const exerciseModal = document.getElementById("exerciseModal");
 const exModalInput = document.getElementById("exModalInput");
+const exModalCategoryInput = document.getElementById("exModalCategoryInput");
+const categoryDropdown = document.getElementById("categoryDropdown");
 const exModalClose = document.getElementById("exModalClose");
 const exModalCancel = document.getElementById("exModalCancel");
 const exModalSave = document.getElementById("exModalSave");
@@ -53,6 +65,154 @@ let showBannerFn = null;
 let clearBannerFn = null;
 let activeNotesPopover = null;
 let activeNotesButton = null;
+let categories = [];
+
+// Update labels based on unit preference
+export function updateLiftLabels() {
+  const unit = getWeightUnit();
+  if (liftWeightInputLabel) {
+    liftWeightInputLabel.textContent = getWeightLabel();
+  }
+  if (liftWeightInput) {
+    liftWeightInput.placeholder = unit === "kg" ? "60" : "135";
+  }
+}
+
+function normalizeCategory(name) {
+  return String(name || "").trim();
+}
+
+function getFilteredExercises() {
+  const cat = exerciseCategoryFilter?.value || "all";
+
+  return exercises.filter((ex) => {
+    const catMatch = cat === "all" || String(ex.category_id || "") === cat;
+    return catMatch;
+  });
+}
+
+function updateCategoryFilterOptions() {
+  if (!exerciseCategoryFilter) return;
+  const current = exerciseCategoryFilter.value || "all";
+
+  exerciseCategoryFilter.innerHTML = "";
+  const allOpt = document.createElement("option");
+  allOpt.value = "all";
+  allOpt.textContent = "All categories";
+  exerciseCategoryFilter.appendChild(allOpt);
+
+  categories.forEach((cat) => {
+    const opt = document.createElement("option");
+    opt.value = String(cat.id);
+    opt.textContent = cat.name;
+    exerciseCategoryFilter.appendChild(opt);
+  });
+
+  exerciseCategoryFilter.value =
+    current === "all" || categories.some((c) => String(c.id) === current)
+      ? current
+      : "all";
+
+  renderCategoryPills();
+}
+
+function renderCategoryPills() {
+  if (!categoryPillRow || !exerciseCategoryFilter) return;
+  const current = exerciseCategoryFilter.value || "all";
+
+  categoryPillRow.innerHTML = "";
+
+  const pills = [
+    { id: "all", name: "All" },
+    ...categories.map((cat) => ({ id: String(cat.id), name: cat.name })),
+  ];
+
+  pills.forEach((pill, idx) => {
+    if (idx > 0) {
+      const sep = document.createElement("span");
+      sep.className = "categoryRangeSep";
+      categoryPillRow.appendChild(sep);
+    }
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `categoryRangeBtn${current === pill.id ? " active" : ""}`;
+    btn.textContent = pill.name;
+    btn.addEventListener("click", () => {
+      exerciseCategoryFilter.value = pill.id;
+      applyExerciseFilters();
+      renderCategoryPills();
+    });
+    categoryPillRow.appendChild(btn);
+  });
+
+  // Check if content overflows and adjust centering accordingly
+  requestAnimationFrame(() => {
+    const scrollWidth = categoryPillRow.scrollWidth;
+    const clientWidth = categoryPillRow.clientWidth;
+
+    if (scrollWidth <= clientWidth) {
+      // Content fits, center it
+      categoryPillRow.style.justifyContent = "center";
+    } else {
+      // Content overflows, align left
+      categoryPillRow.style.justifyContent = "flex-start";
+      categoryPillRow.scrollLeft = 0;
+    }
+  });
+}
+
+function updateCategoryDropdown() {
+  if (!categoryDropdown) return;
+  categoryDropdown.innerHTML = "";
+
+  const inputValue = exModalCategoryInput.value.trim().toLowerCase();
+  const filtered = categories.filter((cat) =>
+    cat.name.toLowerCase().includes(inputValue),
+  );
+
+  if (filtered.length === 0) {
+    categoryDropdown.classList.add("hidden");
+    return;
+  }
+
+  filtered.forEach((cat) => {
+    const opt = document.createElement("div");
+    opt.className = "categoryOption";
+    opt.textContent = cat.name;
+    opt.addEventListener("click", () => {
+      exModalCategoryInput.value = cat.name;
+      categoryDropdown.classList.add("hidden");
+    });
+    categoryDropdown.appendChild(opt);
+  });
+}
+
+function applyExerciseFilters() {
+  const list = getFilteredExercises();
+  fillExerciseSelect(exerciseSelect, list);
+  fillExerciseSelect(liftViewExerciseSelect, list);
+  fillExerciseSelect(liftTableExerciseSelect, list);
+}
+
+async function ensureCategoryId(name) {
+  const clean = normalizeCategory(name);
+  if (!clean) return null;
+
+  const existing = categories.find(
+    (c) => c.name.toLowerCase() === clean.toLowerCase(),
+  );
+  if (existing) return existing.id;
+
+  const created = await createCategory(clean);
+  if (created) {
+    categories = [...categories, created].sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+    updateCategoryFilterOptions();
+    updateCategoryDropdown();
+  }
+  return created?.id ?? null;
+}
 
 // Empty state helpers
 function showLiftEmptyState(canvas, title, subtitle) {
@@ -122,13 +282,18 @@ function hideLiftChartLoading() {
 export async function fetchExercises() {
   const { data, error } = await sb
     .from("exercises")
-    .select("id, name")
+    .select("id, name, category_id, exercise_categories(name)")
     .order("name", { ascending: true });
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    category_id: row.category_id,
+    category: row.exercise_categories?.name || "",
+  }));
 }
 
-async function createExercise(name) {
+async function createExercise(name, categoryId = null) {
   const { data: userData } = await sb.auth.getUser();
   const user = userData.user;
   if (!user) throw new Error("Not logged in");
@@ -139,6 +304,7 @@ async function createExercise(name) {
   const { error } = await sb.from("exercises").insert({
     user_id: user.id,
     name: clean,
+    category_id: categoryId,
   });
 
   if (
@@ -202,6 +368,99 @@ async function renameExercise(exerciseId, newName) {
   if (error) throw error;
 }
 
+async function fetchCategories() {
+  const { data, error } = await sb
+    .from("exercise_categories")
+    .select("id, name")
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+async function createCategory(name) {
+  const { data: userData } = await sb.auth.getUser();
+  const user = userData.user;
+  if (!user) throw new Error("Not logged in");
+
+  const clean = normalizeCategory(name);
+  if (!clean) throw new Error("Category name required");
+
+  const { data, error } = await sb
+    .from("exercise_categories")
+    .upsert(
+      {
+        user_id: user.id,
+        name: clean,
+      },
+      { onConflict: "user_id,name" },
+    )
+    .select("id, name")
+    .single();
+
+  if (
+    error &&
+    String(error.message || "")
+      .toLowerCase()
+      .includes("duplicate")
+  ) {
+    const { data: existing, error: existingError } = await sb
+      .from("exercise_categories")
+      .select("id, name")
+      .eq("user_id", user.id)
+      .eq("name", clean)
+      .single();
+    if (existingError) throw existingError;
+    return existing;
+  }
+  if (error) throw error;
+  return data;
+}
+
+async function renameCategory(categoryId, newName) {
+  const { data: userData } = await sb.auth.getUser();
+  const user = userData.user;
+  if (!user) throw new Error("Not logged in");
+
+  const clean = normalizeCategory(newName);
+  if (!clean) throw new Error("Category name required");
+
+  const { error } = await sb
+    .from("exercise_categories")
+    .update({ name: clean })
+    .eq("id", categoryId)
+    .eq("user_id", user.id);
+
+  if (error) throw error;
+}
+
+async function deleteCategory(categoryId) {
+  const { data: userData } = await sb.auth.getUser();
+  const user = userData.user;
+  if (!user) throw new Error("Not logged in");
+
+  const { error } = await sb
+    .from("exercise_categories")
+    .delete()
+    .eq("id", categoryId)
+    .eq("user_id", user.id);
+
+  if (error) throw error;
+}
+
+async function updateExerciseCategory(exerciseId, categoryId) {
+  const { data: userData } = await sb.auth.getUser();
+  const user = userData.user;
+  if (!user) throw new Error("Not logged in");
+
+  const { error } = await sb
+    .from("exercises")
+    .update({ category_id: categoryId || null })
+    .eq("id", exerciseId)
+    .eq("user_id", user.id);
+
+  if (error) throw error;
+}
+
 async function deleteExercise(exerciseId) {
   const { data: userData } = await sb.auth.getUser();
   const user = userData.user;
@@ -231,7 +490,7 @@ function fillExerciseSelect(selectEl, list, placeholder = "Select exercise…") 
   for (const ex of list) {
     const opt = document.createElement("option");
     opt.value = String(ex.id);
-    opt.textContent = ex.name;
+    opt.textContent = ex.category ? `${ex.name} • ${ex.category}` : ex.name;
     selectEl.appendChild(opt);
   }
 
@@ -249,6 +508,7 @@ function getExerciseNameById(id) {
 function renderLiftChart() {
   const exId = liftViewExerciseSelect.value;
   const ctx = document.getElementById("liftChart");
+  const displayUnit = getWeightUnit();
 
   if (!exId) {
     liftLastText.textContent = "—";
@@ -269,11 +529,18 @@ function renderLiftChart() {
   const rows = liftEntries.filter(
     (r) => String(r.exercise_id) === String(exId),
   );
-  const rowsTf = filterByTimeframe(rows, selectedLiftRange);
+
+  // Convert weights to display unit
+  const convertedRows = rows.map((row) => ({
+    ...row,
+    weight: convertWeight(row.weight, "lbs", displayUnit),
+  }));
+
+  const rowsTf = filterByTimeframe(convertedRows, selectedLiftRange);
   const pts = computeLiftPoints(rowsTf);
 
   liftLastText.textContent = pts.length
-    ? fmt2(pts[pts.length - 1].weight)
+    ? fmt2(pts[pts.length - 1].weight) + ` ${displayUnit}`
     : "—";
 
   if (!pts.length) {
@@ -391,6 +658,7 @@ function renderLiftChart() {
 function renderLiftEntriesTable() {
   const exId = liftTableExerciseSelect.value;
   liftEntriesBody.innerHTML = "";
+  const displayUnit = getWeightUnit();
 
   if (!exId) {
     const tr = document.createElement("tr");
@@ -418,7 +686,8 @@ function renderLiftEntriesTable() {
     tdDate.textContent = formatDisplayDate(r.entry_date);
 
     const tdWeight = document.createElement("td");
-    tdWeight.textContent = fmt2(r.weight);
+    const displayWeight = convertWeight(r.weight, "lbs", displayUnit);
+    tdWeight.textContent = fmt2(displayWeight) + ` ${displayUnit}`;
     tdWeight.className = "mono";
 
     const tdReps = document.createElement("td");
@@ -477,7 +746,13 @@ function renderLiftEntriesTable() {
     del.className = "actionBtn";
     del.addEventListener("click", async (e) => {
       e.stopPropagation();
-      if (!confirm("Delete this entry?")) return;
+      const ok = await uiConfirm({
+        title: "Delete entry",
+        message: "Delete this entry?",
+        confirmText: "Delete",
+        danger: true,
+      });
+      if (!ok) return;
 
       try {
         showLoading(del, "Deleting...");
@@ -522,6 +797,8 @@ function openExerciseModal(showBanner, clearBanner) {
     exerciseModal.classList.add("isOpen");
     exerciseModal.setAttribute("aria-hidden", "false");
     exModalInput.value = "";
+    exModalCategoryInput.value = "";
+    categoryDropdown.classList.add("hidden");
     exModalInput.focus();
   });
 }
@@ -544,17 +821,65 @@ function openManageExercisesModal(showBanner) {
   overlay.className = "modalOverlay";
 
   const card = document.createElement("div");
-  card.className = "modalCard";
+  card.className = "modalCard modalCard--wide";
   card.innerHTML = `
     <div class="modalTop">
       <div>
         <div class="modalTitle">Manage exercises</div>
-        <div class="modalSub muted">Rename or delete exercises.</div>
+        <div class="modalSub muted">Organize exercises by category.</div>
       </div>
       <button class="modalX" aria-label="Close">✕</button>
     </div>
 
-    <div class="modalBody" id="manageList"></div>
+    <div class="modalBody">
+      <div class="modalSection">
+        <div class="modalTop" style="margin-bottom: 12px;">
+          <div class="modalTitle">Categories</div>
+          <button class="btn ghost smallBtn" id="addCategoryBtnCompact" type="button" style="margin-left: auto;">+ Add</button>
+        </div>
+        <div class="modalSub muted">Create, rename, or delete categories.</div>
+        <div id="categoryInputContainer" class="hidden" style="margin: 10px 0; display: flex; gap: 8px;">
+          <input
+            id="newCategoryInput"
+            type="text"
+            placeholder="Category name..."
+            autocomplete="off"
+            style="flex: 1;"
+          />
+          <button class="btn ghost smallBtn" id="addCategoryConfirmBtn" type="button">
+            ✓
+          </button>
+          <button class="btn ghost smallBtn" id="addCategoryCancelBtn" type="button">
+            ✕
+          </button>
+        </div>
+        <div id="categoryList" class="categoryList"></div>
+      </div>
+
+      <div class="modalSection">
+        <div class="modalTop" style="margin-bottom: 12px;">
+          <div class="modalTitle">Exercises</div>
+          <button class="btn ghost smallBtn" id="addExerciseBtnCompact" type="button" style="margin-left: auto;">+ Add</button>
+        </div>
+        <div class="modalSub muted">Create, rename, delete, or assign categories.</div>
+        <div id="exerciseInputContainer" class="hidden" style="margin: 10px 0; display: flex; gap: 8px;">
+          <input
+            id="newExerciseInput"
+            type="text"
+            placeholder="Exercise name..."
+            autocomplete="off"
+            style="flex: 1;"
+          />
+          <button class="btn ghost smallBtn" id="addExerciseConfirmBtn" type="button">
+            ✓
+          </button>
+          <button class="btn ghost smallBtn" id="addExerciseCancelBtn" type="button">
+            ✕
+          </button>
+        </div>
+        <div id="manageList"></div>
+      </div>
+    </div>
 
     <div class="modalActions">
       <button class="btn ghost" id="closeManageBtn" type="button">Close</button>
@@ -580,55 +905,337 @@ function openManageExercisesModal(showBanner) {
   card.querySelector("#closeManageBtn").addEventListener("click", close);
 
   const list = card.querySelector("#manageList");
-  list.innerHTML = "";
+  const categoryList = card.querySelector("#categoryList");
+  const newCategoryInput = card.querySelector("#newCategoryInput");
+  const addCategoryBtn = card.querySelector("#addCategoryBtn");
+  const newExerciseInput = card.querySelector("#newExerciseInput");
+  const addExerciseBtn = card.querySelector("#addExerciseBtn");
 
-  exercises.forEach((ex) => {
-    const row = document.createElement("div");
-    row.className = "manageRow";
-    row.innerHTML = `
-      <div class="manageName">${ex.name}</div>
-      <div class="manageBtns">
-        <button class="btn ghost smallBtn" type="button">Rename</button>
-        <button class="btn ghost smallBtn danger" type="button">Delete</button>
+  // Exercise options modal
+  function openExerciseOptionsModal(
+    ex,
+    showBanner,
+    clearBanner,
+    closeManageModal,
+    renderCategoryListFn,
+    renderExerciseListFn,
+  ) {
+    const overlay = document.createElement("div");
+    overlay.className = "modalOverlay";
+
+    const optionsCard = document.createElement("div");
+    optionsCard.className = "modalCard";
+    optionsCard.innerHTML = `
+      <div class="modalTop">
+        <div>
+          <div class="modalTitle">${ex.name}</div>
+          <div class="modalSub muted">Manage this exercise.</div>
+        </div>
+        <button class="modalX" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modalBody">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <label style="margin-bottom: 0;">Rename</label>
+          <input
+            id="renameExInput"
+            type="text"
+            autocomplete="off"
+            value="${ex.name}"
+          />
+        </div>
+      </div>
+
+      <div class="modalActions">
+        <button class="btn ghost" id="deleteExBtn" type="button" style="padding: 8px 10px; font-size: 12px;">
+          Delete
+        </button>
+        <button class="btn primary" id="renameExSave" type="button">Save</button>
       </div>
     `;
 
-    const [renameBtn, deleteBtn] = row.querySelectorAll("button");
+    overlay.appendChild(optionsCard);
+    document.body.appendChild(overlay);
 
-    renameBtn.addEventListener("click", async () => {
-      const next = prompt("Rename exercise to:", ex.name);
-      if (!next) return;
+    requestAnimationFrame(() => overlay.classList.add("isOpen"));
+
+    const closeOptions = () => {
+      overlay.classList.remove("isOpen");
+      overlay.addEventListener("transitionend", () => overlay.remove(), {
+        once: true,
+      });
+    };
+
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) closeOptions();
+    });
+    optionsCard
+      .querySelector(".modalX")
+      .addEventListener("click", closeOptions);
+
+    const renameInput = optionsCard.querySelector("#renameExInput");
+    const renameSave = optionsCard.querySelector("#renameExSave");
+    requestAnimationFrame(() => renameInput.focus());
+
+    renameInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") renameSave.click();
+    });
+
+    renameSave.addEventListener("click", async () => {
+      const next = renameInput.value.trim();
+      if (!next) {
+        renameInput.classList.add("invalid");
+        return;
+      }
 
       try {
         await renameExercise(ex.id, next);
-        await refreshLifts(showBannerFn, clearBannerFn);
-        close();
-        if (showBannerFn)
-          showBannerFn("Exercise renamed successfully!", "success");
+        await refreshLifts(showBanner, clearBanner);
+        closeOptions();
+        closeManageModal();
+        if (showBanner) showBanner("Exercise renamed successfully!", "success");
       } catch (e) {
-        if (showBannerFn) showBannerFn(`Rename failed: ${e.message}`, "error");
+        if (showBanner) showBanner(`Rename failed: ${e.message}`, "error");
       }
     });
 
-    deleteBtn.addEventListener("click", async () => {
-      const ok = confirm(
-        `Delete "${ex.name}"?\nThis will also delete its lift history.`,
-      );
-      if (!ok) return;
+    optionsCard
+      .querySelector("#deleteExBtn")
+      .addEventListener("click", async () => {
+        const ok = await uiConfirm({
+          title: "Delete exercise",
+          message: `Delete "${ex.name}"? This will also delete its lift history.`,
+          confirmText: "Delete",
+          danger: true,
+        });
+        if (!ok) return;
 
-      try {
-        await deleteExercise(ex.id);
-        await refreshLifts(showBannerFn, clearBannerFn);
-        close();
-        if (showBannerFn)
-          showBannerFn("Exercise deleted successfully!", "success");
-      } catch (e) {
-        if (showBannerFn) showBannerFn(`Delete failed: ${e.message}`, "error");
-      }
+        try {
+          await deleteExercise(ex.id);
+          await refreshLifts(showBanner, clearBanner);
+          closeOptions();
+          closeManageModal();
+          if (showBanner)
+            showBanner("Exercise deleted successfully!", "success");
+        } catch (e) {
+          if (showBanner) showBanner(`Delete failed: ${e.message}`, "error");
+        }
+      });
+  }
+
+  const renderCategoryList = () => {
+    categoryList.innerHTML = "";
+
+    if (!categories.length) {
+      const empty = document.createElement("div");
+      empty.className = "muted small";
+      empty.textContent = "No categories yet.";
+      categoryList.appendChild(empty);
+      return;
+    }
+
+    categories.forEach((cat) => {
+      const row = document.createElement("div");
+      row.className = "categoryRow";
+      row.innerHTML = `
+        <div class="categoryName">${cat.name}</div>
+        <div class="categoryActions">
+          <button class="btn ghost smallBtn" type="button">Rename</button>
+          <button class="btn ghost smallBtn danger" type="button">Delete</button>
+        </div>
+      `;
+
+      const [renameBtn, deleteBtn] = row.querySelectorAll("button");
+
+      renameBtn.addEventListener("click", async () => {
+        const next = await uiPrompt({
+          title: "Rename category",
+          message: "Choose a new category name.",
+          defaultValue: cat.name,
+          confirmText: "Rename",
+        });
+        const clean = normalizeCategory(next);
+        if (!clean) return;
+        renameCategory(cat.id, clean)
+          .then(() => refreshLifts(showBannerFn, clearBannerFn))
+          .then(() => {
+            renderCategoryList();
+            renderExerciseList();
+          })
+          .catch((e) => {
+            if (showBannerFn)
+              showBannerFn(`Rename failed: ${e.message}`, "error");
+          });
+      });
+
+      deleteBtn.addEventListener("click", async () => {
+        const ok = await uiConfirm({
+          title: "Delete category",
+          message: `Delete category "${cat.name}"?`,
+          confirmText: "Delete",
+          danger: true,
+        });
+        if (!ok) return;
+
+        deleteCategory(cat.id)
+          .then(() => refreshLifts(showBannerFn, clearBannerFn))
+          .then(() => {
+            renderCategoryList();
+            renderExerciseList();
+          })
+          .catch((e) => {
+            if (showBannerFn)
+              showBannerFn(`Delete failed: ${e.message}`, "error");
+          });
+      });
+
+      categoryList.appendChild(row);
     });
+  };
 
-    list.appendChild(row);
+  const renderExerciseList = () => {
+    list.innerHTML = "";
+
+    exercises.forEach((ex) => {
+      const row = document.createElement("div");
+      row.className = "manageRow";
+      row.innerHTML = `
+        <div class="manageName">${ex.name}</div>
+        <div class="manageBtns"></div>
+      `;
+
+      const btnWrap = row.querySelector(".manageBtns");
+      const categorySelect = document.createElement("select");
+      categorySelect.className = "select compactSelect categoryAssign";
+
+      const noneOpt = document.createElement("option");
+      noneOpt.value = "";
+      noneOpt.textContent = "Uncategorized";
+      categorySelect.appendChild(noneOpt);
+
+      categories.forEach((cat) => {
+        const opt = document.createElement("option");
+        opt.value = String(cat.id);
+        opt.textContent = cat.name;
+        categorySelect.appendChild(opt);
+      });
+
+      categorySelect.value = ex.category_id ? String(ex.category_id) : "";
+
+      categorySelect.addEventListener("change", async () => {
+        try {
+          await updateExerciseCategory(ex.id, categorySelect.value || null);
+          await refreshLifts(showBannerFn, clearBannerFn);
+          renderCategoryList();
+          renderExerciseList();
+        } catch (e) {
+          if (showBannerFn)
+            showBannerFn(`Update failed: ${e.message}`, "error");
+        }
+      });
+
+      // Settings button that opens exercise options modal
+      const settingsBtn = document.createElement("button");
+      settingsBtn.className = "iconBtn";
+      settingsBtn.type = "button";
+      settingsBtn.innerHTML = "⚙️";
+      settingsBtn.style.fontSize = "18px";
+      settingsBtn.addEventListener("click", () => {
+        openExerciseOptionsModal(
+          ex,
+          showBannerFn,
+          clearBannerFn,
+          close,
+          renderCategoryList,
+          renderExerciseList,
+        );
+      });
+
+      btnWrap.appendChild(categorySelect);
+      btnWrap.appendChild(settingsBtn);
+      list.appendChild(row);
+    });
+  };
+
+  const addCategoryBtnCompact = card.querySelector("#addCategoryBtnCompact");
+  const categoryInputContainer = card.querySelector("#categoryInputContainer");
+  const addCategoryConfirmBtn = card.querySelector("#addCategoryConfirmBtn");
+  const addCategoryCancelBtn = card.querySelector("#addCategoryCancelBtn");
+
+  const addExerciseBtnCompact = card.querySelector("#addExerciseBtnCompact");
+  const exerciseInputContainer = card.querySelector("#exerciseInputContainer");
+  const addExerciseConfirmBtn = card.querySelector("#addExerciseConfirmBtn");
+  const addExerciseCancelBtn = card.querySelector("#addExerciseCancelBtn");
+
+  // Category add toggle
+  addCategoryBtnCompact.addEventListener("click", () => {
+    categoryInputContainer.classList.toggle("hidden");
+    if (!categoryInputContainer.classList.contains("hidden")) {
+      newCategoryInput.focus();
+    }
   });
+
+  addCategoryConfirmBtn.addEventListener("click", () => {
+    const next = normalizeCategory(newCategoryInput.value);
+    if (!next) return;
+
+    createCategory(next)
+      .then(() => refreshLifts(showBannerFn, clearBannerFn))
+      .then(() => {
+        newCategoryInput.value = "";
+        categoryInputContainer.classList.add("hidden");
+        renderCategoryList();
+        renderExerciseList();
+      })
+      .catch((e) => {
+        if (showBannerFn) showBannerFn(`Add failed: ${e.message}`, "error");
+      });
+  });
+
+  addCategoryCancelBtn.addEventListener("click", () => {
+    newCategoryInput.value = "";
+    categoryInputContainer.classList.add("hidden");
+  });
+
+  newCategoryInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addCategoryConfirmBtn.click();
+    if (e.key === "Escape") addCategoryCancelBtn.click();
+  });
+
+  // Exercise add toggle
+  addExerciseBtnCompact.addEventListener("click", () => {
+    openExerciseModal(showBannerFn, clearBannerFn);
+  });
+
+  addExerciseConfirmBtn.addEventListener("click", () => {
+    const name = newExerciseInput.value.trim();
+    if (!name) return;
+
+    createExercise(name, null)
+      .then(() => refreshLifts(showBannerFn, clearBannerFn))
+      .then(() => {
+        newExerciseInput.value = "";
+        exerciseInputContainer.classList.add("hidden");
+        renderExerciseList();
+        if (showBannerFn) showBannerFn("Exercise added!", "success");
+      })
+      .catch((e) => {
+        if (showBannerFn) showBannerFn(`Add failed: ${e.message}`, "error");
+      });
+  });
+
+  addExerciseCancelBtn.addEventListener("click", () => {
+    newExerciseInput.value = "";
+    exerciseInputContainer.classList.add("hidden");
+  });
+
+  newExerciseInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addExerciseConfirmBtn.click();
+    if (e.key === "Escape") addExerciseCancelBtn.click();
+  });
+
+  renderCategoryList();
+  renderExerciseList();
 }
 
 // UI sync
@@ -652,18 +1259,20 @@ function setActiveLiftRange(range) {
 export async function refreshLifts(showBanner, clearBanner) {
   try {
     showLiftChartLoading();
+    categories = await fetchCategories();
     exercises = await fetchExercises();
     liftEntries = await fetchLiftEntries();
 
-    fillExerciseSelect(exerciseSelect, exercises);
-    fillExerciseSelect(liftViewExerciseSelect, exercises);
-    fillExerciseSelect(liftTableExerciseSelect, exercises);
+    updateCategoryFilterOptions();
+    updateCategoryDropdown();
+    applyExerciseFilters();
 
-    if (!liftViewExerciseSelect.value && exercises.length) {
-      liftViewExerciseSelect.value = String(exercises[0].id);
+    const filtered = getFilteredExercises();
+    if (!liftViewExerciseSelect.value && filtered.length) {
+      liftViewExerciseSelect.value = String(filtered[0].id);
     }
-    if (!liftTableExerciseSelect.value && exercises.length) {
-      liftTableExerciseSelect.value = String(exercises[0].id);
+    if (!liftTableExerciseSelect.value && filtered.length) {
+      liftTableExerciseSelect.value = String(filtered[0].id);
     }
 
     renderLiftChart();
@@ -724,6 +1333,7 @@ export function initLiftListeners(showBanner, clearBanner) {
 
   exModalSave.addEventListener("click", async () => {
     const name = exModalInput.value.trim();
+    const category = normalizeCategory(exModalCategoryInput.value);
     if (!name) {
       exModalInput.classList.add("invalid");
       return showBanner("Enter an exercise name.", "error");
@@ -731,7 +1341,8 @@ export function initLiftListeners(showBanner, clearBanner) {
 
     try {
       showLoading(exModalSave, "Adding...");
-      await createExercise(name);
+      const categoryId = await ensureCategoryId(category);
+      await createExercise(name, categoryId);
       await refreshLifts();
 
       const match = exercises.find(
@@ -755,6 +1366,13 @@ export function initLiftListeners(showBanner, clearBanner) {
     }
   });
 
+  if (exerciseCategoryFilter) {
+    exerciseCategoryFilter.addEventListener("change", () => {
+      applyExerciseFilters();
+      renderCategoryPills();
+    });
+  }
+
   liftViewExerciseSelect.addEventListener("change", () => renderLiftChart());
   liftTableExerciseSelect.addEventListener("change", () =>
     renderLiftEntriesTable(),
@@ -766,10 +1384,18 @@ export function initLiftListeners(showBanner, clearBanner) {
     const entry_date = liftDateInput.value;
     const exId = exerciseSelect.value;
 
-    const w = Number(liftWeightInput.value);
+    const inputWeight = Number(liftWeightInput.value);
+    const displayUnit = getWeightUnit();
+
+    // Convert from display unit to lbs for storage
+    const weightInLbs = convertWeight(inputWeight, displayUnit, "lbs");
+
     const reps = liftRepsInput.value ? Number(liftRepsInput.value) : null;
     const sets = liftSetsInput.value ? Number(liftSetsInput.value) : null;
     const notes = liftNotesInput.value.trim();
+
+    // Validation limits adjusted for unit
+    const maxWeight = displayUnit === "kg" ? 2268 : 5000; // ~5000 lbs = 2268 kg
 
     // Validation with visual feedback
     if (!entry_date) {
@@ -780,9 +1406,17 @@ export function initLiftListeners(showBanner, clearBanner) {
       exerciseSelect.classList.add("invalid");
       return showBanner("Select an exercise.", "error");
     }
-    if (!liftWeightInput.value || !Number.isFinite(w) || w <= 0 || w > 5000) {
+    if (
+      !liftWeightInput.value ||
+      !Number.isFinite(inputWeight) ||
+      inputWeight <= 0 ||
+      inputWeight > maxWeight
+    ) {
       liftWeightInput.classList.add("invalid");
-      return showBanner("Enter a valid lift weight (1-5000 lbs).", "error");
+      return showBanner(
+        `Enter a valid lift weight (1-${maxWeight} ${displayUnit}).`,
+        "error",
+      );
     }
     if (
       reps !== null &&
@@ -802,7 +1436,7 @@ export function initLiftListeners(showBanner, clearBanner) {
       await upsertLiftEntry({
         entry_date,
         exercise_id: Number(exId),
-        weight: w,
+        weight: weightInLbs,
         reps,
         sets,
         notes: typeof notes === "string" ? notes.trim() : null,
@@ -827,6 +1461,33 @@ export function initLiftListeners(showBanner, clearBanner) {
     }
   });
 
+  // Category dropdown handlers
+  exModalCategoryInput.addEventListener("input", () => {
+    updateCategoryDropdown();
+    if (exModalCategoryInput.value.trim()) {
+      categoryDropdown.classList.remove("hidden");
+    } else {
+      categoryDropdown.classList.add("hidden");
+    }
+  });
+
+  exModalCategoryInput.addEventListener("focus", () => {
+    if (categories.length > 0 && exModalCategoryInput.value.trim()) {
+      updateCategoryDropdown();
+      categoryDropdown.classList.remove("hidden");
+    }
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener("click", (e) => {
+    if (
+      !exModalCategoryInput.contains(e.target) &&
+      !categoryDropdown.contains(e.target)
+    ) {
+      categoryDropdown.classList.add("hidden");
+    }
+  });
+
   manageExercisesBtn.addEventListener("click", () => {
     openManageExercisesModal(showBanner);
   });
@@ -834,6 +1495,7 @@ export function initLiftListeners(showBanner, clearBanner) {
 
 export function initLiftUI() {
   liftDateInput.value = isoToday();
+  updateLiftLabels();
   syncLiftEditorToSelectedDate();
 }
 

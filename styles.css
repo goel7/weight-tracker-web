@@ -167,6 +167,7 @@ input {
   display: block;
   width: 100%;
   max-width: 100%;
+  min-width: 0;
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid var(--stroke);
@@ -185,6 +186,9 @@ input:focus {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+.grid2 > div {
+  min-width: 0;
 }
 @media (max-width: 640px) {
   .grid2 {
@@ -231,6 +235,44 @@ input:focus {
 
 .btn.ghost {
   background: transparent;
+}
+
+.unitToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(10, 132, 255, 0.4);
+  background: rgba(10, 132, 255, 0.15);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition:
+    transform 0.06s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+  margin-right: 12px;
+}
+
+.unitToggle:hover {
+  background: rgba(10, 132, 255, 0.22);
+  border-color: rgba(10, 132, 255, 0.55);
+}
+
+.unitToggle:active {
+  transform: translateY(1px);
+}
+
+.unitToggleIcon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+#unitToggleText {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .authCard .btn {
@@ -723,8 +765,92 @@ input[type="date"] {
   gap: 10px;
 }
 
+.categoryPills {
+  display: none;
+}
+
+@media (max-width: 520px) {
+  .exerciseSelectRow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: end;
+    gap: 8px;
+  }
+
+  .exerciseSelectRow #exerciseCategoryFilter {
+    display: none;
+  }
+
+  .categoryPills {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 6px 0 10px;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+  }
+
+  .categoryPills::-webkit-scrollbar {
+    display: none;
+  }
+
+  .categoryPills::-webkit-scrollbar-thumb {
+    display: none;
+  }
+
+  .categoryRangeBtn {
+    background: transparent;
+    border: 0;
+    padding: 6px 2px;
+    color: rgba(245, 245, 247, 0.6);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    position: relative;
+    transition: 160ms ease;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+
+  .categoryRangeBtn:hover {
+    color: rgba(245, 245, 247, 0.85);
+  }
+
+  .categoryRangeBtn.active {
+    color: var(--text);
+  }
+
+  .categoryRangeBtn.active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -6px;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(10, 132, 255, 0.65);
+  }
+
+  .categoryRangeSep {
+    width: 1px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.12);
+    flex: 0 0 auto;
+  }
+
+  .exerciseSelectRow #exerciseSelect {
+    min-width: 0;
+    width: auto;
+    flex: 1 1 0;
+  }
+}
+
 .select {
   width: 100%;
+  min-width: 0;
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid var(--stroke);
@@ -747,6 +873,17 @@ input[type="date"] {
   padding: 9px 10px;
   border-radius: 12px;
   font-weight: 700;
+}
+
+.addExerciseBtn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  line-height: 1;
 }
 
 .compactSelect {
@@ -795,6 +932,10 @@ input[type="date"] {
   transition: opacity 180ms ease;
 }
 
+#exerciseModal.modalOverlay {
+  z-index: 10001;
+}
+
 .modalOverlay.isOpen {
   opacity: 1;
   pointer-events: auto;
@@ -802,11 +943,15 @@ input[type="date"] {
 
 .modalCard {
   width: min(520px, 100%);
+  max-height: min(85vh, 760px);
   background: rgba(18, 19, 24, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 18px;
   padding: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
 
   /* animation base */
   transform: translateY(10px) scale(0.98);
@@ -814,6 +959,13 @@ input[type="date"] {
   transition:
     transform 180ms ease,
     opacity 180ms ease;
+}
+
+.modalContent {
+  overflow: visible;
+  flex: 1;
+  min-height: 0;
+  padding-right: 4px;
 }
 
 .modalOverlay.isOpen .modalCard {
@@ -843,6 +995,115 @@ input[type="date"] {
   letter-spacing: -0.02em;
 }
 
+.modalTitle {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.modalSub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.modalMessage {
+  margin: 8px 0 14px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.modalInput {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.modalBody {
+  max-height: min(62vh, 560px);
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.modalSection {
+  margin-top: 14px;
+}
+
+.modalSection + .modalSection {
+  margin-top: 36px;
+  padding-top: 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modalSection > .modalTitle:first-child {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.modalCard--wide {
+  width: min(860px, 100%);
+}
+
+.modalX {
+  height: 36px;
+  width: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--stroke);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(245, 245, 247, 0.9);
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.modalX:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.categoryDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: rgba(18, 19, 24, 1);
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  min-height: 0;
+}
+
+.categoryDropdown.hidden {
+  display: none;
+}
+
+.categoryOption {
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.categoryOption:first-child {
+  border-radius: 12px 12px 0 0;
+}
+
+.categoryOption:last-child {
+  border-radius: 0 0 12px 12px;
+}
+
+.categoryOption:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.categoryOption.active {
+  background: rgba(255, 255, 255, 0.12);
+  font-weight: 600;
+}
+
 .iconBtn {
   width: 40px;
   height: 40px;
@@ -863,6 +1124,9 @@ input[type="date"] {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 14px;
+  padding-top: 14px;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .manageRow {
@@ -885,6 +1149,40 @@ input[type="date"] {
 .manageBtns {
   display: flex;
   gap: 8px;
+}
+
+.categoryList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 14px;
+}
+
+.categoryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.categoryRow:last-child {
+  border-bottom: 0;
+}
+
+.categoryName {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.categoryActions {
+  display: flex;
+  gap: 8px;
+}
+
+.categoryAssign {
+  min-width: 160px;
 }
 
 .btn.danger {

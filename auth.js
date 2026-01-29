@@ -8,6 +8,7 @@ import { sb } from "./supabase.js";
 const authCard = document.getElementById("authCard");
 const app = document.getElementById("app");
 const logoutBtn = document.getElementById("logoutBtn");
+const unitToggle = document.getElementById("unitToggle");
 const pageNav = document.getElementById("pageNav");
 
 const emailEl = document.getElementById("email");
@@ -27,6 +28,7 @@ export async function setUIAuthed(isAuthed) {
   authCard.classList.toggle("hidden", isAuthed);
   app.classList.toggle("hidden", !isAuthed);
   logoutBtn.classList.toggle("hidden", !isAuthed);
+  unitToggle.classList.toggle("hidden", !isAuthed);
   pageNav.classList.toggle("hidden", !isAuthed);
 }
 
@@ -89,7 +91,7 @@ export function initAuthListeners(showBanner, clearBanner, bootstrapAuthed) {
         });
         if (signInErr) throw signInErr;
 
-        // bootstrapAuthed will be called by onAuthStateChange
+        await bootstrapAuthed();
         return;
       }
 
@@ -99,7 +101,7 @@ export function initAuthListeners(showBanner, clearBanner, bootstrapAuthed) {
       });
       if (error) throw error;
 
-      // bootstrapAuthed will be called by onAuthStateChange
+      await bootstrapAuthed();
     } catch (e) {
       showBanner(
         `${authMode === "signup" ? "Sign up" : "Login"} failed: ${e.message}`,

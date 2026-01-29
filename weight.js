@@ -13,11 +13,16 @@ import {
   weeklyAverages,
   computePoints,
   yAxisDomain,
+  uiConfirm,
+  getWeightUnit,
+  convertWeight,
+  getWeightLabel,
 } from "./utils.js";
 
 // UI Elements
 const dateInput = document.getElementById("dateInput");
 const weightInput = document.getElementById("weightInput");
+const weightInputLabel = document.getElementById("weightInputLabel");
 const selectedDateText = document.getElementById("selectedDateText");
 const saveBtn = document.getElementById("saveBtn");
 const avg7Text = document.getElementById("avg7Text");
@@ -37,6 +42,17 @@ let selectedRange = "30d";
 let datasetVisible = [true, true]; // [Weight, 7-day avg]
 let showBannerFn = null;
 let clearBannerFn = null;
+
+// Update labels based on unit preference
+export function updateWeightLabels() {
+  const unit = getWeightUnit();
+  if (weightInputLabel) {
+    weightInputLabel.textContent = getWeightLabel();
+  }
+  if (weightInput) {
+    weightInput.placeholder = unit === "kg" ? "70.0" : "155.0";
+  }
+}
 
 // Empty state helpers
 function showEmptyState(canvas, title, subtitle) {
@@ -204,13 +220,20 @@ function renderLegendPills(c, showBanner, clearBanner) {
 function renderChart(showBanner, clearBanner) {
   const tf = selectedRange || "ytd";
   const rowsForChart = filterByTimeframe(weights, tf);
+  const displayUnit = getWeightUnit();
 
-  const points = computePoints(rowsForChart);
+  // Convert weights to display unit for chart
+  const convertedRows = rowsForChart.map((row) => ({
+    ...row,
+    weight: convertWeight(row.weight, "lbs", displayUnit),
+  }));
+
+  const points = computePoints(convertedRows);
   const domain = yAxisDomain(points);
   const step = domain.step;
 
   avg7Text.textContent = points.length
-    ? fmt2(points[points.length - 1].avg7)
+    ? fmt2(points[points.length - 1].avg7) + ` ${displayUnit}`
     : "—";
 
   const ctx = document.getElementById("chart");
@@ -380,6 +403,7 @@ function renderEntries() {
     b.entry_date.localeCompare(a.entry_date),
   );
   entriesBody.innerHTML = "";
+  const displayUnit = getWeightUnit();
 
   if (sorted.length === 0) {
     const tr = document.createElement("tr");
@@ -395,7 +419,8 @@ function renderEntries() {
     tdDate.textContent = formatDisplayDate(r.entry_date);
 
     const tdWeight = document.createElement("td");
-    tdWeight.textContent = fmt2(r.weight);
+    const displayWeight = convertWeight(r.weight, "lbs", displayUnit);
+    tdWeight.textContent = fmt2(displayWeight) + ` ${displayUnit}`;
     tdWeight.className = "mono";
 
     const tdAction = document.createElement("td");
@@ -406,7 +431,13 @@ function renderEntries() {
     del.className = "actionBtn";
     del.addEventListener("click", async (e) => {
       e.stopPropagation();
-      if (!confirm(`Delete ${r.entry_date}?`)) return;
+      const ok = await uiConfirm({
+        title: "Delete entry",
+        message: `Delete ${r.entry_date}?`,
+        confirmText: "Delete",
+        danger: true,
+      });
+      if (!ok) return;
 
       try {
         showLoading(del, "Deleting...");
@@ -445,6 +476,7 @@ function renderEntries() {
 function renderWeekly() {
   const weeks = weeklyAverages(weights);
   weeklyBody.innerHTML = "";
+  const displayUnit = getWeightUnit();
 
   if (weeks.length === 0) {
     const tr = document.createElement("tr");
@@ -455,9 +487,10 @@ function renderWeekly() {
 
   for (const w of weeks) {
     const tr = document.createElement("tr");
+    const displayWeight = convertWeight(w.avg, "lbs", displayUnit);
     tr.innerHTML = `
       <td>${formatDisplayDate(w.weekStart)}</td>
-      <td class="mono">${fmt2(w.avg)}</td>
+      <td class="mono">${fmt2(displayWeight)} ${displayUnit}</td>
       <td>${w.count}</td>
     `;
     weeklyBody.appendChild(tr);
@@ -469,7 +502,13 @@ function syncEditorToSelectedDate() {
   const d = dateInput.value;
   selectedDateText.textContent = d || "";
   const existing = weights.find((w) => w.entry_date === d);
-  weightInput.value = existing ? String(existing.weight) : "";
+  if (existing) {
+    const displayUnit = getWeightUnit();
+    const displayWeight = convertWeight(existing.weight, "lbs", displayUnit);
+    weightInput.value = String(displayWeight.toFixed(1));
+  } else {
+    weightInput.value = "";
+  }
 }
 
 function setActiveRange(range, showBanner, clearBanner) {
@@ -508,14 +547,18 @@ export function initWeightListeners(showBanner, clearBanner) {
   // Add input validation
   weightInput.addEventListener("input", () => {
     const w = Number(weightInput.value);
-    const isValid = w > 0 && w <= 1000;
+    const displayUnit = getWeightUnit();
+    const maxWeight = displayUnit === "kg" ? 454 : 1000;
+    const isValid = w > 0 && w <= maxWeight;
     weightInput.classList.toggle("invalid", weightInput.value && !isValid);
     saveBtn.disabled = !dateInput.value || !isValid || !weightInput.value;
   });
 
   dateInput.addEventListener("change", () => {
     const w = Number(weightInput.value);
-    const isValid = w > 0 && w <= 1000;
+    const displayUnit = getWeightUnit();
+    const maxWeight = displayUnit === "kg" ? 454 : 1000;
+    const isValid = w > 0 && w <= maxWeight;
     saveBtn.disabled = !dateInput.value || !isValid || !weightInput.value;
   });
 
@@ -523,7 +566,14 @@ export function initWeightListeners(showBanner, clearBanner) {
     clearBanner();
 
     const d = dateInput.value;
-    const w = Number(weightInput.value);
+    const inputWeight = Number(weightInput.value);
+    const displayUnit = getWeightUnit();
+
+    // Convert from display unit to lbs for storage
+    const weightInLbs = convertWeight(inputWeight, displayUnit, "lbs");
+
+    // Validation limits adjusted for unit
+    const maxWeight = displayUnit === "kg" ? 454 : 1000; // ~1000 lbs = 454 kg
 
     if (!d) {
       dateInput.classList.add("invalid");
@@ -533,14 +583,21 @@ export function initWeightListeners(showBanner, clearBanner) {
       weightInput.classList.add("invalid");
       return showBanner("Enter a weight.", "error");
     }
-    if (!Number.isFinite(w) || w <= 0 || w > 1000) {
+    if (
+      !Number.isFinite(inputWeight) ||
+      inputWeight <= 0 ||
+      inputWeight > maxWeight
+    ) {
       weightInput.classList.add("invalid");
-      return showBanner("Enter a valid weight (1-1000 lbs).", "error");
+      return showBanner(
+        `Enter a valid weight (1-${maxWeight} ${displayUnit}).`,
+        "error",
+      );
     }
 
     try {
       showLoading(saveBtn, "Saving...");
-      await upsertWeight(d, w);
+      await upsertWeight(d, weightInLbs);
       await refreshAll(showBanner, clearBanner);
       showBanner("Weight saved successfully!", "success");
       weightInput.classList.remove("invalid");
@@ -572,6 +629,7 @@ export function initWeightListeners(showBanner, clearBanner) {
 
 export function initWeightUI() {
   dateInput.value = isoToday();
+  updateWeightLabels();
   syncEditorToSelectedDate();
 }
 

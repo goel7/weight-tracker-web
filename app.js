@@ -15,18 +15,23 @@ import {
   initWeightListeners,
   initWeightUI,
   resizeWeightChart,
+  updateWeightLabels,
 } from "./weight.js";
 import {
   refreshLifts,
   initLiftListeners,
   initLiftUI,
   resizeLiftChart,
+  updateLiftLabels,
 } from "./lifts.js";
+import { getWeightUnit, setWeightUnit } from "./utils.js";
 
 // -------------------- UI --------------------
 const banner = document.getElementById("banner");
 const bannerText = document.getElementById("bannerText");
 const bannerClose = document.getElementById("bannerClose");
+const unitToggle = document.getElementById("unitToggle");
+const unitToggleText = document.getElementById("unitToggleText");
 
 const pageBtns = Array.from(document.querySelectorAll(".pageBtn"));
 const weightPage = document.getElementById("weightPage");
@@ -61,6 +66,23 @@ function clearBanner() {
 }
 
 bannerClose.addEventListener("click", clearBanner);
+
+// -------------------- Unit Toggle --------------------
+function updateUnitToggle() {
+  const unit = getWeightUnit();
+  unitToggleText.textContent = unit;
+}
+
+unitToggle.addEventListener("click", () => {
+  const current = getWeightUnit();
+  const next = current === "lbs" ? "kg" : "lbs";
+  setWeightUnit(next);
+  updateUnitToggle();
+  updateWeightLabels();
+  updateLiftLabels();
+  refreshWeight(showBanner, clearBanner);
+  refreshLifts(showBanner, clearBanner);
+});
 
 // -------------------- Page Navigation --------------------
 async function setActivePage(page) {
@@ -97,6 +119,7 @@ async function bootstrapAuthed() {
   hasBootstrapped = true;
   await setUIAuthed(true);
 
+  updateUnitToggle();
   initWeightUI();
   await refreshWeight(showBanner, clearBanner);
 

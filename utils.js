@@ -2,8 +2,41 @@
 // UTILITY FUNCTIONS
 // =====================================================
 
+// Unit conversion constants
+const LBS_TO_KG = 0.453592;
+const KG_TO_LBS = 2.20462;
+
+// Unit preference (stored in localStorage)
+export function getWeightUnit() {
+  return localStorage.getItem("weightUnit") || "lbs";
+}
+
+export function setWeightUnit(unit) {
+  localStorage.setItem("weightUnit", unit);
+}
+
+export function convertWeight(value, fromUnit, toUnit) {
+  if (fromUnit === toUnit) return value;
+  if (fromUnit === "lbs" && toUnit === "kg") return value * LBS_TO_KG;
+  if (fromUnit === "kg" && toUnit === "lbs") return value * KG_TO_LBS;
+  return value;
+}
+
+export function formatWeight(value, unit = null) {
+  const displayUnit = unit || getWeightUnit();
+  return `${Number(value).toFixed(1)} ${displayUnit}`;
+}
+
+export function getWeightLabel(baseLabel = "Weight") {
+  return `${baseLabel} (${getWeightUnit()})`;
+}
+
 export function isoToday() {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export function parseISO(s) {
@@ -74,6 +107,163 @@ const fmtLong = new Intl.DateTimeFormat(undefined, {
   month: "short",
   year: "numeric",
 });
+
+function createModal({
+  title,
+  message,
+  confirmText = "Confirm",
+  cancelText = "Cancel",
+  danger = false,
+  input = false,
+  placeholder = "",
+  defaultValue = "",
+}) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "modalOverlay";
+
+    const card = document.createElement("div");
+    card.className = "modalCard";
+
+    const top = document.createElement("div");
+    top.className = "modalTop";
+
+    const titleWrap = document.createElement("div");
+    const titleEl = document.createElement("div");
+    titleEl.className = "modalTitle";
+    titleEl.textContent = title;
+    titleWrap.appendChild(titleEl);
+
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "modalX";
+    closeBtn.type = "button";
+    closeBtn.setAttribute("aria-label", "Close");
+    closeBtn.textContent = "✕";
+
+    top.appendChild(titleWrap);
+    top.appendChild(closeBtn);
+
+    const messageEl = document.createElement("div");
+    messageEl.className = "modalMessage";
+    messageEl.textContent = message || "";
+
+    let inputEl = null;
+    if (input) {
+      inputEl = document.createElement("input");
+      inputEl.className = "modalInput";
+      inputEl.type = "text";
+      inputEl.placeholder = placeholder;
+      inputEl.value = defaultValue;
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "modalActions";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "btn ghost";
+    cancelBtn.type = "button";
+    cancelBtn.textContent = cancelText;
+    cancelBtn.dataset.action = "cancel";
+
+    const confirmBtn = document.createElement("button");
+    confirmBtn.className = `btn ${danger ? "danger" : "primary"}`;
+    confirmBtn.type = "button";
+    confirmBtn.textContent = confirmText;
+    confirmBtn.dataset.action = "confirm";
+
+    actions.appendChild(cancelBtn);
+    actions.appendChild(confirmBtn);
+
+    card.appendChild(top);
+    card.appendChild(messageEl);
+    if (inputEl) card.appendChild(inputEl);
+    card.appendChild(actions);
+
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    requestAnimationFrame(() => overlay.classList.add("isOpen"));
+
+    if (inputEl) {
+      inputEl.focus();
+      inputEl.select();
+    }
+
+    const cleanup = () => {
+      overlay.classList.remove("isOpen");
+      overlay.addEventListener("transitionend", () => overlay.remove(), {
+        once: true,
+      });
+    };
+
+    const finish = (value) => {
+      cleanup();
+      resolve(value);
+    };
+
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) finish(input ? null : false);
+    });
+
+    closeBtn.addEventListener("click", () => finish(input ? null : false));
+    cancelBtn.addEventListener("click", () => finish(input ? null : false));
+
+    confirmBtn.addEventListener("click", () => {
+      if (input) {
+        finish(inputEl.value.trim());
+      } else {
+        finish(true);
+      }
+    });
+
+    window.addEventListener(
+      "keydown",
+      (e) => {
+        if (e.key !== "Escape") return;
+        finish(input ? null : false);
+      },
+      { once: true },
+    );
+
+    if (inputEl) {
+      inputEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          finish(inputEl.value.trim());
+        }
+      });
+    }
+  });
+}
+
+export function uiConfirm({
+  title = "Confirm",
+  message,
+  confirmText = "Confirm",
+  cancelText = "Cancel",
+  danger = false,
+}) {
+  return createModal({ title, message, confirmText, cancelText, danger });
+}
+
+export function uiPrompt({
+  title = "Rename",
+  message = "",
+  defaultValue = "",
+  placeholder = "",
+  confirmText = "Save",
+  cancelText = "Cancel",
+}) {
+  return createModal({
+    title,
+    message,
+    confirmText,
+    cancelText,
+    input: true,
+    placeholder,
+    defaultValue,
+  });
+}
 
 export function formatDisplayDate(iso) {
   return fmtLong.format(parseISO(iso));

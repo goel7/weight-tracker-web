@@ -54,6 +54,17 @@
             </button>
           </div>
 
+          <!-- Unit toggle (more prominent) -->
+          <button
+            id="unitToggle"
+            class="unitToggle hidden"
+            type="button"
+            title="Toggle between lbs and kg"
+          >
+            <span class="unitToggleIcon">⚖️</span>
+            <span id="unitToggleText">lbs</span>
+          </button>
+
           <button id="logoutBtn" class="btn ghost hidden" type="button">
             Logout
           </button>
@@ -140,12 +151,12 @@
               </div>
 
               <div>
-                <label>Weight (lbs)</label>
+                <label id="weightInputLabel">Weight (lbs)</label>
                 <input
                   id="weightInput"
                   type="number"
                   step="0.1"
-                  placeholder="155.0"
+                  placeholder="70.0"
                 />
               </div>
             </div>
@@ -294,16 +305,27 @@
 
               <div>
                 <label>Exercise</label>
-                <div class="selectRow">
-                  <select id="exerciseSelect" class="select">
+                <div id="categoryPillRow" class="categoryPills"></div>
+                <div
+                  class="selectRow exerciseSelectRow"
+                  style="align-items: flex-end; gap: 8px"
+                >
+                  <select
+                    id="exerciseCategoryFilter"
+                    class="select compactSelect"
+                    style="flex: 0 0 150px; min-width: 120px"
+                  >
+                    <option value="all" selected>All categories</option>
+                  </select>
+                  <select id="exerciseSelect" class="select" style="flex: 1">
                     <option value="" selected disabled>Select exercise…</option>
                   </select>
                   <button
                     id="addExerciseBtn"
-                    class="btn ghost smallBtn"
+                    class="btn ghost smallBtn addExerciseBtn"
                     type="button"
                   >
-                    + Add
+                    +
                   </button>
 
                   <button
@@ -320,12 +342,12 @@
 
             <div class="grid2">
               <div>
-                <label>Weight (lbs)</label>
+                <label id="liftWeightInputLabel">Weight (lbs)</label>
                 <input
                   id="liftWeightInput"
                   type="number"
                   step="0.5"
-                  placeholder="135"
+                  placeholder="60"
                 />
               </div>
 
@@ -474,17 +496,30 @@
           </button>
         </div>
 
-        <p class="muted small" style="margin: 0 0 10px">
-          Enter a name like <span class="mono">Bench Press</span> or
-          <span class="mono">Lat Pulldown</span>.
-        </p>
+        <div class="modalContent">
+          <p class="muted small" style="margin: 0 0 10px">
+            Enter a name like <span class="mono">Bench Press</span> or
+            <span class="mono">Lat Pulldown</span>.
+          </p>
 
-        <input
-          id="exModalInput"
-          type="text"
-          placeholder="Exercise name..."
-          autocomplete="off"
-        />
+          <input
+            id="exModalInput"
+            type="text"
+            placeholder="Exercise name..."
+            autocomplete="off"
+          />
+
+          <label style="margin-top: 10px">Category (optional)</label>
+          <div style="position: relative">
+            <input
+              id="exModalCategoryInput"
+              type="text"
+              placeholder="Push / Pull / Legs"
+              autocomplete="off"
+            />
+            <div id="categoryDropdown" class="categoryDropdown hidden"></div>
+          </div>
+        </div>
 
         <div class="modalActions">
           <button id="exModalCancel" class="btn ghost" type="button">
