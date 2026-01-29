@@ -15,6 +15,7 @@ const emailEl = document.getElementById("email");
 const passEl = document.getElementById("password");
 const primaryAuthBtn = document.getElementById("primaryAuthBtn");
 const toggleAuthBtn = document.getElementById("toggleAuthBtn");
+const googleSignInBtn = document.getElementById("googleSignInBtn");
 
 const authTitle = document.getElementById("authTitle");
 const authSubtitle = document.getElementById("authSubtitle");
@@ -109,6 +110,20 @@ export function initAuthListeners(showBanner, clearBanner, bootstrapAuthed) {
     } finally {
       primaryAuthBtn.disabled = false;
       toggleAuthBtn.disabled = false;
+    }
+  });
+
+  googleSignInBtn.addEventListener("click", async () => {
+    try {
+      const { error } = await sb.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+      if (error) throw error;
+    } catch (e) {
+      showBanner(`Google sign-in failed: ${e.message}`);
     }
   });
 

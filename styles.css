@@ -237,6 +237,23 @@ input:focus {
   background: transparent;
 }
 
+.btn.googleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  color: rgba(0, 0, 0, 0.87);
+  border-color: rgba(0, 0, 0, 0.12);
+  font-weight: 600;
+}
+
+.btn.googleBtn:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(0, 0, 0, 0.18);
+}
+
 .unitToggle {
   display: flex;
   align-items: center;
@@ -1268,7 +1285,7 @@ select.invalid:focus {
 /* Empty states */
 .emptyState {
   position: absolute;
-  top: 50%;
+  top: 55%;
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
