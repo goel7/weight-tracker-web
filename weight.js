@@ -283,6 +283,10 @@ function renderChart(showBanner, clearBanner) {
     datasetVisible = [chart.isDatasetVisible(0), chart.isDatasetVisible(1)];
   }
 
+  if (!datasetVisible[0] && !datasetVisible[1]) {
+    datasetVisible = [true, true];
+  }
+
   if (chart) chart.destroy();
 
   const isPhone = window.innerWidth < 480;
