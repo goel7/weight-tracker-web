@@ -120,6 +120,13 @@ function renderCategoryPills() {
   if (!categoryPillRow || !exerciseCategoryFilter) return;
   const current = exerciseCategoryFilter.value || "all";
 
+  if (categories.length === 0) {
+    categoryPillRow.classList.add("hidden");
+    categoryPillRow.innerHTML = "";
+    return;
+  }
+
+  categoryPillRow.classList.remove("hidden");
   categoryPillRow.innerHTML = "";
 
   const pills = [

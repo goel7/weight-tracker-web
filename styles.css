@@ -329,7 +329,6 @@ input:focus {
 
 /* banner */
 .banner {
-  margin-top: 12px;
   padding: 12px 16px;
   border-radius: 14px;
   display: flex;
@@ -339,6 +338,7 @@ input:focus {
   background: rgba(255, 59, 48, 0.18);
   border: 1px solid rgba(255, 59, 48, 0.28);
   color: var(--text);
+  backdrop-filter: blur(10px);
 }
 
 #bannerClose {
@@ -356,9 +356,12 @@ input:focus {
 
 /* Make the banner stick to the top while scrolling */
 #banner {
-  position: sticky;
-  top: calc(12px + env(safe-area-inset-top)); /* nice on iPhone notch */
-  z-index: 50; /* above cards */
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(var(--container-max), calc(100% - 44px));
+  z-index: 1000;
 }
 
 /* optional: give it a little separation when it’s stuck */
