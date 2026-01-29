@@ -1380,10 +1380,16 @@ export function initLiftListeners(showBanner, clearBanner) {
     });
   }
 
-  liftViewExerciseSelect.addEventListener("change", () => renderLiftChart());
-  liftTableExerciseSelect.addEventListener("change", () =>
-    renderLiftEntriesTable(),
-  );
+  liftViewExerciseSelect.addEventListener("change", () => {
+    liftTableExerciseSelect.value = liftViewExerciseSelect.value;
+    renderLiftChart();
+    renderLiftEntriesTable();
+  });
+  liftTableExerciseSelect.addEventListener("change", () => {
+    liftViewExerciseSelect.value = liftTableExerciseSelect.value;
+    renderLiftChart();
+    renderLiftEntriesTable();
+  });
 
   liftSaveBtn.addEventListener("click", async () => {
     clearBanner();
