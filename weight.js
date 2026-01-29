@@ -77,6 +77,31 @@ function hideLoading(element) {
   delete element.dataset.originalText;
 }
 
+// Chart loading state
+function showChartLoading() {
+  const chart = document.getElementById("chart");
+  const chartWrap = chart.parentElement;
+  let loading = chartWrap.querySelector(".loadingState");
+
+  if (!loading) {
+    loading = document.createElement("div");
+    loading.className = "loadingState";
+    chartWrap.appendChild(loading);
+  }
+
+  loading.innerHTML = `
+    <div class="loadingSpinner"></div>
+    <div class="loadingText">Fetching your data...</div>
+  `;
+}
+
+function hideChartLoading() {
+  const chart = document.getElementById("chart");
+  const chartWrap = chart.parentElement;
+  const loading = chartWrap.querySelector(".loadingState");
+  if (loading) loading.remove();
+}
+
 function removeWeightLocal(entry_date) {
   weights = weights.filter((w) => w.entry_date !== entry_date);
 }
@@ -461,12 +486,15 @@ function setActiveRange(range, showBanner, clearBanner) {
 
 export async function refreshAll(showBanner, clearBanner) {
   try {
+    showChartLoading();
     weights = await fetchWeights();
     renderChart(showBanner, clearBanner);
     renderEntries();
     renderWeekly();
     syncEditorToSelectedDate();
+    hideChartLoading();
   } catch (e) {
+    hideChartLoading();
     showBanner(`Failed to load data: ${e.message}`, "error");
   }
 }

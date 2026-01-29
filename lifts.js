@@ -93,6 +93,31 @@ function hideLoading(element) {
   delete element.dataset.originalText;
 }
 
+// Chart loading state
+function showLiftChartLoading() {
+  const liftChart = document.getElementById("liftChart");
+  const chartWrap = liftChart.parentElement;
+  let loading = chartWrap.querySelector(".loadingState");
+
+  if (!loading) {
+    loading = document.createElement("div");
+    loading.className = "loadingState";
+    chartWrap.appendChild(loading);
+  }
+
+  loading.innerHTML = `
+    <div class="loadingSpinner"></div>
+    <div class="loadingText">Fetching your data...</div>
+  `;
+}
+
+function hideLiftChartLoading() {
+  const liftChart = document.getElementById("liftChart");
+  const chartWrap = liftChart.parentElement;
+  const loading = chartWrap.querySelector(".loadingState");
+  if (loading) loading.remove();
+}
+
 // Data operations
 export async function fetchExercises() {
   const { data, error } = await sb
@@ -626,6 +651,7 @@ function setActiveLiftRange(range) {
 
 export async function refreshLifts(showBanner, clearBanner) {
   try {
+    showLiftChartLoading();
     exercises = await fetchExercises();
     liftEntries = await fetchLiftEntries();
 
@@ -642,7 +668,9 @@ export async function refreshLifts(showBanner, clearBanner) {
 
     renderLiftChart();
     renderLiftEntriesTable();
+    hideLiftChartLoading();
   } catch (e) {
+    hideLiftChartLoading();
     showBanner(`Failed to load data: ${e.message}`, "error");
   }
 }

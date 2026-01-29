@@ -65,6 +65,7 @@ bannerClose.addEventListener("click", clearBanner);
 // -------------------- Page Navigation --------------------
 async function setActivePage(page) {
   selectedPage = page;
+  localStorage.setItem("selectedPage", page);
 
   pageBtns.forEach((b) => {
     const on = b.dataset.page === page;
@@ -102,7 +103,8 @@ async function bootstrapAuthed() {
   initLiftUI();
   await refreshLifts(showBanner, clearBanner);
 
-  setActivePage("weight");
+  const savedPage = localStorage.getItem("selectedPage") || "weight";
+  setActivePage(savedPage);
 }
 
 // -------------------- Init --------------------
