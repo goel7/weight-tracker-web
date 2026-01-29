@@ -89,7 +89,7 @@ export function initAuthListeners(showBanner, clearBanner, bootstrapAuthed) {
         });
         if (signInErr) throw signInErr;
 
-        await bootstrapAuthed();
+        // bootstrapAuthed will be called by onAuthStateChange
         return;
       }
 
@@ -99,7 +99,7 @@ export function initAuthListeners(showBanner, clearBanner, bootstrapAuthed) {
       });
       if (error) throw error;
 
-      await bootstrapAuthed();
+      // bootstrapAuthed will be called by onAuthStateChange
     } catch (e) {
       showBanner(
         `${authMode === "signup" ? "Sign up" : "Login"} failed: ${e.message}`,

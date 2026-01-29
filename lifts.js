@@ -49,6 +49,47 @@ let exercises = [];
 let liftEntries = [];
 let liftChart = null;
 let selectedLiftRange = "90d";
+let showBannerFn = null;
+let clearBannerFn = null;
+
+// Empty state helpers
+function showLiftEmptyState(canvas, title, subtitle) {
+  const chartWrap = canvas.parentElement;
+  let empty = chartWrap.querySelector(".emptyState");
+
+  if (!empty) {
+    empty = document.createElement("div");
+    empty.className = "emptyState";
+    chartWrap.appendChild(empty);
+  }
+
+  empty.innerHTML = `
+    <div class="emptyIcon">💪</div>
+    <div class="emptyTitle">${title}</div>
+    <div class="emptySubtitle">${subtitle}</div>
+  `;
+}
+
+function clearLiftEmptyState(canvas) {
+  const chartWrap = canvas.parentElement;
+  const empty = chartWrap.querySelector(".emptyState");
+  if (empty) empty.remove();
+}
+
+// Loading state helpers
+function showLoading(element, text = "Loading...") {
+  element.disabled = true;
+  const original = element.textContent;
+  element.dataset.originalText = original;
+  element.innerHTML = `<span class="spinner"></span> ${text}`;
+}
+
+function hideLoading(element) {
+  element.disabled = false;
+  const original = element.dataset.originalText || element.textContent;
+  element.textContent = original;
+  delete element.dataset.originalText;
+}
 
 // Data operations
 export async function fetchExercises() {
@@ -190,6 +231,11 @@ function renderLiftChart() {
       data: { labels: [], datasets: [] },
       options: { responsive: true, maintainAspectRatio: false },
     });
+    showLiftEmptyState(
+      ctx,
+      "Select an exercise",
+      "Choose an exercise above to see your progress!",
+    );
     return;
   }
 
@@ -210,8 +256,15 @@ function renderLiftChart() {
       data: { labels: [], datasets: [] },
       options: { responsive: true, maintainAspectRatio: false },
     });
+    showLiftEmptyState(
+      ctx,
+      "No entries yet",
+      "Log your first lift above to track progress!",
+    );
     return;
   }
+
+  clearLiftEmptyState(ctx);
 
   const minISO = pts[0].iso;
   const maxISO = pts[pts.length - 1].iso;
@@ -312,12 +365,24 @@ function renderLiftEntriesTable() {
   const exId = liftTableExerciseSelect.value;
   liftEntriesBody.innerHTML = "";
 
-  if (!exId) return;
+  if (!exId) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="5" class="emptyTableMessage">Select an exercise to view entries</td>`;
+    liftEntriesBody.appendChild(tr);
+    return;
+  }
 
   const rows = liftEntries
     .filter((r) => String(r.exercise_id) === String(exId))
     .slice()
     .sort((a, b) => b.entry_date.localeCompare(a.entry_date));
+
+  if (rows.length === 0) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="5" class="emptyTableMessage">No entries yet for this exercise. Start logging above!</td>`;
+    liftEntriesBody.appendChild(tr);
+    return;
+  }
 
   for (const r of rows) {
     const tr = document.createElement("tr");
@@ -338,8 +403,17 @@ function renderLiftEntriesTable() {
     del.addEventListener("click", async (e) => {
       e.stopPropagation();
       if (!confirm("Delete this entry?")) return;
-      await deleteLiftEntry(r.id);
-      await refreshLifts();
+
+      try {
+        showLoading(del, "Deleting...");
+        await deleteLiftEntry(r.id);
+        await refreshLifts(showBannerFn, clearBannerFn);
+        if (showBannerFn)
+          showBannerFn("Entry deleted successfully!", "success");
+      } catch (e) {
+        if (showBannerFn) showBannerFn(`Delete failed: ${e.message}`, "error");
+        hideLoading(del);
+      }
     });
     tdAction.appendChild(del);
 
@@ -445,10 +519,12 @@ function openManageExercisesModal(showBanner) {
 
       try {
         await renameExercise(ex.id, next);
-        await refreshLifts();
+        await refreshLifts(showBannerFn, clearBannerFn);
         close();
+        if (showBannerFn)
+          showBannerFn("Exercise renamed successfully!", "success");
       } catch (e) {
-        showBanner(`Rename failed: ${e.message}`);
+        if (showBannerFn) showBannerFn(`Rename failed: ${e.message}`, "error");
       }
     });
 
@@ -460,10 +536,12 @@ function openManageExercisesModal(showBanner) {
 
       try {
         await deleteExercise(ex.id);
-        await refreshLifts();
+        await refreshLifts(showBannerFn, clearBannerFn);
         close();
+        if (showBannerFn)
+          showBannerFn("Exercise deleted successfully!", "success");
       } catch (e) {
-        showBanner(`Delete failed: ${e.message}`);
+        if (showBannerFn) showBannerFn(`Delete failed: ${e.message}`, "error");
       }
     });
 
@@ -489,26 +567,34 @@ function setActiveLiftRange(range) {
   renderLiftChart();
 }
 
-export async function refreshLifts() {
-  exercises = await fetchExercises();
-  liftEntries = await fetchLiftEntries();
+export async function refreshLifts(showBanner, clearBanner) {
+  try {
+    exercises = await fetchExercises();
+    liftEntries = await fetchLiftEntries();
 
-  fillExerciseSelect(exerciseSelect, exercises);
-  fillExerciseSelect(liftViewExerciseSelect, exercises);
-  fillExerciseSelect(liftTableExerciseSelect, exercises);
+    fillExerciseSelect(exerciseSelect, exercises);
+    fillExerciseSelect(liftViewExerciseSelect, exercises);
+    fillExerciseSelect(liftTableExerciseSelect, exercises);
 
-  if (!liftViewExerciseSelect.value && exercises.length) {
-    liftViewExerciseSelect.value = String(exercises[0].id);
+    if (!liftViewExerciseSelect.value && exercises.length) {
+      liftViewExerciseSelect.value = String(exercises[0].id);
+    }
+    if (!liftTableExerciseSelect.value && exercises.length) {
+      liftTableExerciseSelect.value = String(exercises[0].id);
+    }
+
+    renderLiftChart();
+    renderLiftEntriesTable();
+  } catch (e) {
+    showBanner(`Failed to load data: ${e.message}`, "error");
   }
-  if (!liftTableExerciseSelect.value && exercises.length) {
-    liftTableExerciseSelect.value = String(exercises[0].id);
-  }
-
-  renderLiftChart();
-  renderLiftEntriesTable();
 }
 
 export function initLiftListeners(showBanner, clearBanner) {
+  // Store banner functions for use in other handlers
+  showBannerFn = showBanner;
+  clearBannerFn = clearBanner;
+
   liftDateInput.addEventListener("change", syncLiftEditorToSelectedDate);
 
   liftRangeButtons.forEach((btn) => {
@@ -538,10 +624,13 @@ export function initLiftListeners(showBanner, clearBanner) {
 
   exModalSave.addEventListener("click", async () => {
     const name = exModalInput.value.trim();
-    if (!name) return showBanner("Enter an exercise name.");
+    if (!name) {
+      exModalInput.classList.add("invalid");
+      return showBanner("Enter an exercise name.", "error");
+    }
 
     try {
-      exModalSave.disabled = true;
+      showLoading(exModalSave, "Adding...");
       await createExercise(name);
       await refreshLifts();
 
@@ -557,10 +646,12 @@ export function initLiftListeners(showBanner, clearBanner) {
       }
 
       closeExerciseModal();
+      showBanner("Exercise added successfully!", "success");
+      exModalInput.classList.remove("invalid");
     } catch (e) {
-      showBanner(`Add exercise failed: ${e.message}`);
+      showBanner(`Add exercise failed: ${e.message}`, "error");
     } finally {
-      exModalSave.disabled = false;
+      hideLoading(exModalSave);
     }
   });
 
@@ -580,17 +671,33 @@ export function initLiftListeners(showBanner, clearBanner) {
     const sets = liftSetsInput.value ? Number(liftSetsInput.value) : null;
     const notes = liftNotesInput.value.trim();
 
-    if (!entry_date) return showBanner("Pick a date.");
-    if (!exId) return showBanner("Select an exercise.");
-    if (!Number.isFinite(w) || w <= 0)
-      return showBanner("Enter a valid lift weight.");
-    if (reps !== null && (!Number.isInteger(reps) || reps <= 0))
-      return showBanner("Reps must be a positive integer.");
-    if (sets !== null && (!Number.isInteger(sets) || sets <= 0))
-      return showBanner("Sets must be a positive integer.");
+    // Validation with visual feedback
+    if (!entry_date) {
+      liftDateInput.classList.add("invalid");
+      return showBanner("Pick a date.", "error");
+    }
+    if (!exId) {
+      exerciseSelect.classList.add("invalid");
+      return showBanner("Select an exercise.", "error");
+    }
+    if (!liftWeightInput.value || !Number.isFinite(w) || w <= 0 || w > 5000) {
+      liftWeightInput.classList.add("invalid");
+      return showBanner("Enter a valid lift weight (1-5000 lbs).", "error");
+    }
+    if (
+      reps !== null &&
+      (!Number.isInteger(reps) || reps <= 0 || reps > 1000)
+    ) {
+      liftRepsInput.classList.add("invalid");
+      return showBanner("Reps must be a positive integer (1-1000).", "error");
+    }
+    if (sets !== null && (!Number.isInteger(sets) || sets <= 0 || sets > 100)) {
+      liftSetsInput.classList.add("invalid");
+      return showBanner("Sets must be a positive integer (1-100).", "error");
+    }
 
     try {
-      liftSaveBtn.disabled = true;
+      showLoading(liftSaveBtn, "Saving...");
 
       await upsertLiftEntry({
         entry_date,
@@ -605,10 +712,18 @@ export function initLiftListeners(showBanner, clearBanner) {
       liftTableExerciseSelect.value = String(exId);
 
       await refreshLifts();
+      showBanner("Lift saved successfully!", "success");
+
+      // Clear validation states
+      liftDateInput.classList.remove("invalid");
+      exerciseSelect.classList.remove("invalid");
+      liftWeightInput.classList.remove("invalid");
+      liftRepsInput.classList.remove("invalid");
+      liftSetsInput.classList.remove("invalid");
     } catch (e) {
-      showBanner(`Save failed: ${e.message}`);
+      showBanner(`Save failed: ${e.message}`, "error");
     } finally {
-      liftSaveBtn.disabled = false;
+      hideLoading(liftSaveBtn);
     }
   });
 

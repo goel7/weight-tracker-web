@@ -29,7 +29,13 @@ html {
 
 body {
   color: var(--text);
-  font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  font:
+    16px/1.4 system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Helvetica,
+    Arial;
   min-height: 100dvh;
   background: transparent;
 }
@@ -42,7 +48,8 @@ body {
   pointer-events: none;
 
   background-color: var(--bg);
-  background-image: radial-gradient(
+  background-image:
+    radial-gradient(
       1200px 600px at 20% 0%,
       rgba(10, 132, 255, 0.1),
       transparent 55%
@@ -201,7 +208,9 @@ input:focus {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text);
   cursor: pointer;
-  transition: transform 0.06s ease, background 0.15s ease,
+  transition:
+    transform 0.06s ease,
+    background 0.15s ease,
     border-color 0.15s ease;
 }
 
@@ -758,7 +767,9 @@ input[type="date"] {
   /* animation base */
   transform: translateY(10px) scale(0.98);
   opacity: 0;
-  transition: transform 180ms ease, opacity 180ms ease;
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease;
 }
 
 .modalOverlay.isOpen .modalCard {
@@ -854,7 +865,9 @@ input[type="date"] {
   align-items: center;
   justify-content: center;
 
-  transition: background 150ms ease, transform 80ms ease;
+  transition:
+    background 150ms ease,
+    transform 80ms ease;
 }
 
 .iconBtn:hover {
@@ -863,4 +876,87 @@ input[type="date"] {
 
 .iconBtn:active {
   transform: translateY(1px);
+}
+
+/* ================== NEW: Loading, Validation & Empty States ================== */
+
+/* Loading spinner */
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: var(--text);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Success banner */
+.banner.success {
+  background: rgba(52, 199, 89, 0.18);
+  border-color: rgba(52, 199, 89, 0.35);
+}
+
+.banner.error {
+  background: rgba(255, 59, 48, 0.18);
+  border-color: rgba(255, 59, 48, 0.28);
+}
+
+/* Input validation */
+input.invalid,
+select.invalid {
+  border-color: var(--red);
+  background: rgba(255, 59, 48, 0.08);
+}
+
+input.invalid:focus,
+select.invalid:focus {
+  border-color: var(--red);
+  background: rgba(255, 59, 48, 0.12);
+}
+
+/* Empty states */
+.emptyState {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.emptyIcon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.emptyTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.emptySubtitle {
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 300px;
+}
+
+/* Empty table message */
+.emptyTableMessage {
+  text-align: center !important;
+  padding: 32px 16px !important;
+  color: var(--muted);
+  font-style: italic;
 }

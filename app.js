@@ -38,20 +38,31 @@ const appSub = document.getElementById("appSub");
 let selectedPage = "weight";
 
 // -------------------- Banner --------------------
-function showBanner(msg) {
+let bannerTimeout = null;
+
+function showBanner(msg, type = "error") {
   bannerText.textContent = msg;
   banner.classList.remove("hidden");
+  banner.classList.remove("error", "success");
+  banner.classList.add(type);
+
+  // Auto-dismiss success messages after 3 seconds
+  if (type === "success") {
+    clearTimeout(bannerTimeout);
+    bannerTimeout = setTimeout(clearBanner, 3000);
+  }
 }
 
 function clearBanner() {
   banner.classList.add("hidden");
   bannerText.textContent = "";
+  clearTimeout(bannerTimeout);
 }
 
 bannerClose.addEventListener("click", clearBanner);
 
 // -------------------- Page Navigation --------------------
-function setActivePage(page) {
+async function setActivePage(page) {
   selectedPage = page;
 
   pageBtns.forEach((b) => {
@@ -66,11 +77,11 @@ function setActivePage(page) {
   if (page === "weight") {
     appTitle.textContent = "Weight Tracker";
     appSub.textContent = "Log daily weight, see trend + weekly averages.";
-    refreshWeight(showBanner, clearBanner);
+    // Don't reload data when switching pages - data is already loaded
   } else {
     appTitle.textContent = "Lift Tracker";
     appSub.textContent = "Log lifts, track strength progression by exercise.";
-    refreshLifts();
+    // Don't reload data when switching pages - data is already loaded
   }
 }
 
@@ -86,7 +97,7 @@ async function bootstrapAuthed() {
   await refreshWeight(showBanner, clearBanner);
 
   initLiftUI();
-  await refreshLifts();
+  await refreshLifts(showBanner, clearBanner);
 
   setActivePage("weight");
 }

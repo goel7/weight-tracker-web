@@ -36,6 +36,45 @@ let chart = null;
 let selectedRange = "30d";
 let datasetVisible = [true, true]; // [Weight, 7-day avg]
 
+// Empty state helpers
+function showEmptyState(canvas, title, subtitle) {
+  const chartWrap = canvas.parentElement;
+  let empty = chartWrap.querySelector(".emptyState");
+
+  if (!empty) {
+    empty = document.createElement("div");
+    empty.className = "emptyState";
+    chartWrap.appendChild(empty);
+  }
+
+  empty.innerHTML = `
+    <div class="emptyIcon">📊</div>
+    <div class="emptyTitle">${title}</div>
+    <div class="emptySubtitle">${subtitle}</div>
+  `;
+}
+
+function clearEmptyState(canvas) {
+  const chartWrap = canvas.parentElement;
+  const empty = chartWrap.querySelector(".emptyState");
+  if (empty) empty.remove();
+}
+
+// Loading state helpers
+function showLoading(element, text = "Loading...") {
+  element.disabled = true;
+  const original = element.textContent;
+  element.dataset.originalText = original;
+  element.innerHTML = `<span class="spinner"></span> ${text}`;
+}
+
+function hideLoading(element) {
+  element.disabled = false;
+  const original = element.dataset.originalText || element.textContent;
+  element.textContent = original;
+  delete element.dataset.originalText;
+}
+
 // Data operations
 export async function fetchWeights() {
   const { data, error } = await sb
@@ -155,8 +194,18 @@ function renderChart(showBanner, clearBanner) {
 
     const host = ensureLegendHost(ctx);
     if (host) host.innerHTML = "";
+
+    // Show empty state message
+    showEmptyState(
+      ctx,
+      "No weight entries yet",
+      "Log your first entry above to see your trend!",
+    );
     return;
   }
+
+  // Clear empty state if it exists
+  clearEmptyState(ctx);
 
   const minISO = points[0].iso;
   const maxISO = points[points.length - 1].iso;
@@ -301,6 +350,13 @@ function renderEntries(refreshAll) {
   );
   entriesBody.innerHTML = "";
 
+  if (sorted.length === 0) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="3" class="emptyTableMessage">No entries yet. Start logging above!</td>`;
+    entriesBody.appendChild(tr);
+    return;
+  }
+
   for (const r of sorted) {
     const tr = document.createElement("tr");
 
@@ -320,8 +376,16 @@ function renderEntries(refreshAll) {
     del.addEventListener("click", async (e) => {
       e.stopPropagation();
       if (!confirm(`Delete ${r.entry_date}?`)) return;
-      await deleteWeight(r.entry_date);
-      await refreshAll();
+
+      try {
+        showLoading(del, "Deleting...");
+        await deleteWeight(r.entry_date);
+        await refreshAll(showBanner, clearBanner);
+        showBanner("Entry deleted successfully!", "success");
+      } catch (e) {
+        showBanner(`Delete failed: ${e.message}`, "error");
+        hideLoading(del);
+      }
     });
 
     tdAction.appendChild(del);
@@ -342,6 +406,13 @@ function renderEntries(refreshAll) {
 function renderWeekly() {
   const weeks = weeklyAverages(weights);
   weeklyBody.innerHTML = "";
+
+  if (weeks.length === 0) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="3" class="emptyTableMessage">No weekly data yet. Add more entries!</td>`;
+    weeklyBody.appendChild(tr);
+    return;
+  }
 
   for (const w of weeks) {
     const tr = document.createElement("tr");
@@ -375,15 +446,33 @@ function setActiveRange(range, showBanner, clearBanner) {
 }
 
 export async function refreshAll(showBanner, clearBanner) {
-  weights = await fetchWeights();
-  renderChart(showBanner, clearBanner);
-  renderEntries(refreshAll);
-  renderWeekly();
-  syncEditorToSelectedDate();
+  try {
+    weights = await fetchWeights();
+    renderChart(showBanner, clearBanner);
+    renderEntries(refreshAll);
+    renderWeekly();
+    syncEditorToSelectedDate();
+  } catch (e) {
+    showBanner(`Failed to load data: ${e.message}`, "error");
+  }
 }
 
 export function initWeightListeners(showBanner, clearBanner) {
   dateInput.addEventListener("change", syncEditorToSelectedDate);
+
+  // Add input validation
+  weightInput.addEventListener("input", () => {
+    const w = Number(weightInput.value);
+    const isValid = w > 0 && w <= 1000;
+    weightInput.classList.toggle("invalid", weightInput.value && !isValid);
+    saveBtn.disabled = !dateInput.value || !isValid || !weightInput.value;
+  });
+
+  dateInput.addEventListener("change", () => {
+    const w = Number(weightInput.value);
+    const isValid = w > 0 && w <= 1000;
+    saveBtn.disabled = !dateInput.value || !isValid || !weightInput.value;
+  });
 
   saveBtn.addEventListener("click", async () => {
     clearBanner();
@@ -391,18 +480,30 @@ export function initWeightListeners(showBanner, clearBanner) {
     const d = dateInput.value;
     const w = Number(weightInput.value);
 
-    if (!d) return showBanner("Pick a date.");
-    if (!Number.isFinite(w) || w <= 0)
-      return showBanner("Enter a valid weight.");
+    if (!d) {
+      dateInput.classList.add("invalid");
+      return showBanner("Pick a date.", "error");
+    }
+    if (!weightInput.value) {
+      weightInput.classList.add("invalid");
+      return showBanner("Enter a weight.", "error");
+    }
+    if (!Number.isFinite(w) || w <= 0 || w > 1000) {
+      weightInput.classList.add("invalid");
+      return showBanner("Enter a valid weight (1-1000 lbs).", "error");
+    }
 
     try {
-      saveBtn.disabled = true;
+      showLoading(saveBtn, "Saving...");
       await upsertWeight(d, w);
       await refreshAll(showBanner, clearBanner);
+      showBanner("Weight saved successfully!", "success");
+      weightInput.classList.remove("invalid");
+      dateInput.classList.remove("invalid");
     } catch (e) {
-      showBanner(`Save failed: ${e.message}`);
+      showBanner(`Save failed: ${e.message}`, "error");
     } finally {
-      saveBtn.disabled = false;
+      hideLoading(saveBtn);
     }
   });
 
