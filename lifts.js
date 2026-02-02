@@ -1410,6 +1410,17 @@ export function initLiftListeners(showBanner, clearBanner) {
     liftWeightInput.classList.remove("invalid");
   });
 
+  // Enter key to submit on lift form inputs
+  [liftWeightInput, liftRepsInput, liftSetsInput, liftNotesInput].forEach(
+    (input) => {
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          liftSaveBtn.click();
+        }
+      });
+    },
+  );
+
   liftSaveBtn.addEventListener("click", async () => {
     clearBanner();
 

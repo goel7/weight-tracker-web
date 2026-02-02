@@ -566,6 +566,13 @@ export function initWeightListeners(showBanner, clearBanner) {
     saveBtn.disabled = !dateInput.value || !isValid || !weightInput.value;
   });
 
+  // Enter key to submit
+  weightInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !saveBtn.disabled) {
+      saveBtn.click();
+    }
+  });
+
   saveBtn.addEventListener("click", async () => {
     clearBanner();
 
@@ -606,6 +613,9 @@ export function initWeightListeners(showBanner, clearBanner) {
       showBanner("Weight saved successfully!", "success");
       weightInput.classList.remove("invalid");
       dateInput.classList.remove("invalid");
+      // Clear input and re-focus for next entry
+      weightInput.value = "";
+      weightInput.focus();
     } catch (e) {
       showBanner(`Save failed: ${e.message}`, "error");
     } finally {
@@ -635,6 +645,7 @@ export function initWeightUI() {
   dateInput.value = isoToday();
   updateWeightLabels();
   syncEditorToSelectedDate();
+  weightInput.focus();
 }
 
 export function resizeWeightChart() {
