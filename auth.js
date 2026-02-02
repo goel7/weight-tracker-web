@@ -137,7 +137,6 @@ export function initAuthListeners(showBanner, clearBanner, bootstrapAuthed) {
   });
 
   logoutBtn.addEventListener("click", async () => {
-    localStorage.removeItem("selectedPage");
     await sb.auth.signOut();
   });
 }

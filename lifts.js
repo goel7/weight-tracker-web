@@ -1377,6 +1377,16 @@ export function initLiftListeners(showBanner, clearBanner) {
     exerciseCategoryFilter.addEventListener("change", () => {
       applyExerciseFilters();
       renderCategoryPills();
+
+      // Auto-select first exercise in the filtered list
+      const filteredExercises = getFilteredExercises();
+      if (filteredExercises.length > 0) {
+        const firstExerciseId = String(filteredExercises[0].id);
+        liftViewExerciseSelect.value = firstExerciseId;
+        liftTableExerciseSelect.value = firstExerciseId;
+        renderLiftChart();
+        renderLiftEntriesTable();
+      }
     });
   }
 
@@ -1389,6 +1399,15 @@ export function initLiftListeners(showBanner, clearBanner) {
     liftViewExerciseSelect.value = liftTableExerciseSelect.value;
     renderLiftChart();
     renderLiftEntriesTable();
+  });
+
+  // Clear form inputs when exercise selection changes
+  exerciseSelect.addEventListener("change", () => {
+    liftWeightInput.value = "";
+    liftRepsInput.value = "";
+    liftSetsInput.value = "";
+    liftNotesInput.value = "";
+    liftWeightInput.classList.remove("invalid");
   });
 
   liftSaveBtn.addEventListener("click", async () => {

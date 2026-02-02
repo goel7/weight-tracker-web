@@ -87,7 +87,6 @@ unitToggle.addEventListener("click", () => {
 // -------------------- Page Navigation --------------------
 async function setActivePage(page) {
   selectedPage = page;
-  localStorage.setItem("selectedPage", page);
 
   pageBtns.forEach((b) => {
     const on = b.dataset.page === page;
@@ -126,8 +125,7 @@ async function bootstrapAuthed() {
   initLiftUI();
   await refreshLifts(showBanner, clearBanner);
 
-  const savedPage = localStorage.getItem("selectedPage") || "weight";
-  setActivePage(savedPage);
+  setActivePage("weight");
 }
 
 // -------------------- Init --------------------
