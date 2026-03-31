@@ -25,6 +25,7 @@ import {
   updateLiftLabels,
 } from "./lifts.js";
 import { getWeightUnit, setWeightUnit } from "./utils.js";
+import * as importExportModule from "./importExport.js";
 
 // -------------------- UI --------------------
 const banner = document.getElementById("banner");
@@ -32,6 +33,12 @@ const bannerText = document.getElementById("bannerText");
 const bannerClose = document.getElementById("bannerClose");
 const unitToggle = document.getElementById("unitToggle");
 const unitToggleText = document.getElementById("unitToggleText");
+
+const settingsBtn = document.getElementById("settingsBtn");
+const settingsMenu = document.getElementById("settingsMenu");
+const settingsImportBtn = document.getElementById("settingsImportBtn");
+const settingsExportBtn = document.getElementById("settingsExportBtn");
+const settingsLogoutBtn = document.getElementById("settingsLogoutBtn");
 
 const pageBtns = Array.from(document.querySelectorAll(".pageBtn"));
 const weightPage = document.getElementById("weightPage");
@@ -66,6 +73,156 @@ function clearBanner() {
 }
 
 bannerClose.addEventListener("click", clearBanner);
+
+// -------------------- Settings Menu --------------------
+function closeSettingsMenu() {
+  settingsMenu.classList.remove("isOpen");
+}
+
+settingsBtn.addEventListener("click", () => {
+  settingsMenu.classList.toggle("isOpen");
+});
+
+// Close menu when clicking outside
+document.addEventListener("click", (e) => {
+  if (!settingsBtn.contains(e.target) && !settingsMenu.contains(e.target)) {
+    closeSettingsMenu();
+  }
+});
+
+settingsLogoutBtn.addEventListener("click", async () => {
+  closeSettingsMenu();
+  await sb.auth.signOut();
+});
+
+// Import/Export handlers for settings menu
+settingsExportBtn.addEventListener("click", async () => {
+  closeSettingsMenu();
+
+  if (selectedPage === "weight") {
+    // Export weight data
+    const { data: weights, error } = await sb
+      .from("weights")
+      .select("id, entry_date, weight")
+      .order("entry_date", { ascending: true });
+
+    if (error) {
+      showBanner(`Failed to fetch weight data: ${error.message}`, "error");
+      return;
+    }
+
+    if (!weights || weights.length === 0) {
+      showBanner("No weight data to export yet.", "error");
+      return;
+    }
+
+    importExportModule.downloadWeightCSV(weights);
+    showBanner("Weight data exported successfully!", "success");
+  } else {
+    // Export lifts data
+    const { data: liftEntries, error: entriesError } = await sb
+      .from("lift_entries")
+      .select("id, entry_date, exercise_id, weight, reps, sets, notes")
+      .order("entry_date", { ascending: true });
+
+    if (entriesError) {
+      showBanner(`Failed to fetch lift data: ${entriesError.message}`, "error");
+      return;
+    }
+
+    const { data: exercises, error: exError } = await sb
+      .from("exercises")
+      .select("id, name, category_id, exercise_categories(name)");
+
+    if (exError) {
+      showBanner(`Failed to fetch exercises: ${exError.message}`, "error");
+      return;
+    }
+
+    if (!liftEntries || liftEntries.length === 0) {
+      showBanner("No lift data to export yet.", "error");
+      return;
+    }
+
+    importExportModule.downloadLiftsCSV(liftEntries, exercises);
+    showBanner("Lift data exported successfully!", "success");
+  }
+});
+
+settingsImportBtn.addEventListener("click", async () => {
+  closeSettingsMenu();
+
+  try {
+    const csvText = await importExportModule.selectAndReadCSV();
+    if (!csvText) {
+      return; // User cancelled
+    }
+
+    if (selectedPage === "weight") {
+      // Import weight data
+      const entries = importExportModule.parseWeightCSV(csvText);
+
+      const ok = await importExportModule.showImportConfirmation(
+        "Import weight data",
+        `Ready to import ${entries.length} weight entries.`,
+        `First entry: ${entries[0].entry_date}\nLast entry: ${entries[entries.length - 1].entry_date}`,
+      );
+
+      if (!ok) return;
+
+      showBanner("Importing weight data...", "success");
+      const results = await importExportModule.importWeightFromCSV(csvText);
+
+      if (results.success > 0) {
+        await refreshWeight(showBanner, clearBanner);
+        showBanner(
+          `Imported ${results.success} weight entries successfully!`,
+          "success",
+        );
+      }
+
+      if (results.failed > 0) {
+        console.warn("Import errors:", results.errors);
+        showBanner(
+          `Imported ${results.success} entries, ${results.failed} failed`,
+          "error",
+        );
+      }
+    } else {
+      // Import lifts data
+      const entries = importExportModule.parseLiftsCSV(csvText);
+
+      const ok = await importExportModule.showImportConfirmation(
+        "Import lift data",
+        `Ready to import ${entries.length} lift entries.`,
+        `First entry: ${entries[0].entry_date}\nLast entry: ${entries[entries.length - 1].entry_date}`,
+      );
+
+      if (!ok) return;
+
+      showBanner("Importing lift data...", "success");
+      const results = await importExportModule.importLiftsFromCSV(csvText);
+
+      if (results.success > 0) {
+        await refreshLifts(showBanner, clearBanner);
+        showBanner(
+          `Imported ${results.success} lift entries successfully!`,
+          "success",
+        );
+      }
+
+      if (results.failed > 0) {
+        console.warn("Import errors:", results.errors);
+        showBanner(
+          `Imported ${results.success} entries, ${results.failed} failed`,
+          "error",
+        );
+      }
+    }
+  } catch (e) {
+    showBanner(`Import failed: ${e.message}`, "error");
+  }
+});
 
 // -------------------- Unit Toggle --------------------
 function updateUnitToggle() {

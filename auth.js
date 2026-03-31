@@ -7,7 +7,7 @@ import { sb } from "./supabase.js";
 // UI Elements
 const authCard = document.getElementById("authCard");
 const app = document.getElementById("app");
-const logoutBtn = document.getElementById("logoutBtn");
+const settingsContainer = document.getElementById("settingsContainer");
 const unitToggle = document.getElementById("unitToggle");
 const pageNav = document.getElementById("pageNav");
 
@@ -28,7 +28,7 @@ let authMode = "login"; // "login" | "signup"
 export async function setUIAuthed(isAuthed) {
   authCard.classList.toggle("hidden", isAuthed);
   app.classList.toggle("hidden", !isAuthed);
-  logoutBtn.classList.toggle("hidden", !isAuthed);
+  settingsContainer.classList.toggle("hidden", !isAuthed);
   unitToggle.classList.toggle("hidden", !isAuthed);
   pageNav.classList.toggle("hidden", !isAuthed);
 }
@@ -134,10 +134,6 @@ export function initAuthListeners(showBanner, clearBanner, bootstrapAuthed) {
     } catch (e) {
       showBanner(`Google sign-in failed: ${e.message}`);
     }
-  });
-
-  logoutBtn.addEventListener("click", async () => {
-    await sb.auth.signOut();
   });
 }
 

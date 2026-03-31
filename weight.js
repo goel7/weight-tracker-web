@@ -27,6 +27,9 @@ const selectedDateText = document.getElementById("selectedDateText");
 const saveBtn = document.getElementById("saveBtn");
 const avg7Text = document.getElementById("avg7Text");
 const entriesBody = document.getElementById("entriesBody");
+const weightEntriesPagination = document.getElementById(
+  "weightEntriesPagination",
+);
 const weeklyBody = document.getElementById("weeklyBody");
 const entriesTab = document.getElementById("entriesTab");
 const weeklyTab = document.getElementById("weeklyTab");
@@ -42,6 +45,9 @@ let selectedRange = "30d";
 let datasetVisible = [true, true]; // [Weight, 7-day avg]
 let showBannerFn = null;
 let clearBannerFn = null;
+let weightEntriesPage = 1;
+
+const WEIGHT_ENTRIES_PAGE_SIZE = 30;
 
 // Update labels based on unit preference
 export function updateWeightLabels() {
@@ -120,6 +126,60 @@ function hideChartLoading() {
 
 function removeWeightLocal(entry_date) {
   weights = weights.filter((w) => w.entry_date !== entry_date);
+}
+
+function renderWeightEntriesPagination(totalEntries) {
+  if (!weightEntriesPagination) return;
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(totalEntries / WEIGHT_ENTRIES_PAGE_SIZE),
+  );
+
+  if (weightEntriesPage > totalPages) {
+    weightEntriesPage = totalPages;
+  }
+
+  if (totalEntries <= WEIGHT_ENTRIES_PAGE_SIZE) {
+    weightEntriesPagination.classList.add("hidden");
+    weightEntriesPagination.innerHTML = "";
+    return;
+  }
+
+  weightEntriesPagination.classList.remove("hidden");
+  weightEntriesPagination.innerHTML = "";
+
+  const prevBtn = document.createElement("button");
+  prevBtn.type = "button";
+  prevBtn.className = "paginationBtn";
+  prevBtn.textContent = "←";
+  prevBtn.disabled = weightEntriesPage <= 1;
+  prevBtn.setAttribute("aria-label", "Previous page");
+  prevBtn.addEventListener("click", () => {
+    if (weightEntriesPage <= 1) return;
+    weightEntriesPage -= 1;
+    renderEntries();
+  });
+
+  const status = document.createElement("span");
+  status.className = "paginationStatus";
+  status.textContent = `Page ${weightEntriesPage} of ${totalPages}`;
+
+  const nextBtn = document.createElement("button");
+  nextBtn.type = "button";
+  nextBtn.className = "paginationBtn";
+  nextBtn.textContent = "→";
+  nextBtn.disabled = weightEntriesPage >= totalPages;
+  nextBtn.setAttribute("aria-label", "Next page");
+  nextBtn.addEventListener("click", () => {
+    if (weightEntriesPage >= totalPages) return;
+    weightEntriesPage += 1;
+    renderEntries();
+  });
+
+  weightEntriesPagination.appendChild(prevBtn);
+  weightEntriesPagination.appendChild(status);
+  weightEntriesPagination.appendChild(nextBtn);
 }
 
 // Data operations
@@ -413,10 +473,22 @@ function renderEntries() {
     const tr = document.createElement("tr");
     tr.innerHTML = `<td colspan="3" class="emptyTableMessage">No entries yet. Start logging above!</td>`;
     entriesBody.appendChild(tr);
+    renderWeightEntriesPagination(0);
     return;
   }
 
-  for (const r of sorted) {
+  const totalPages = Math.max(
+    1,
+    Math.ceil(sorted.length / WEIGHT_ENTRIES_PAGE_SIZE),
+  );
+  if (weightEntriesPage > totalPages) {
+    weightEntriesPage = totalPages;
+  }
+
+  const start = (weightEntriesPage - 1) * WEIGHT_ENTRIES_PAGE_SIZE;
+  const pageRows = sorted.slice(start, start + WEIGHT_ENTRIES_PAGE_SIZE);
+
+  for (const r of pageRows) {
     const tr = document.createElement("tr");
 
     const tdDate = document.createElement("td");
@@ -475,6 +547,8 @@ function renderEntries() {
 
     entriesBody.appendChild(tr);
   }
+
+  renderWeightEntriesPagination(sorted.length);
 }
 
 function renderWeekly() {
@@ -609,6 +683,7 @@ export function initWeightListeners(showBanner, clearBanner) {
     try {
       showLoading(saveBtn, "Saving...");
       await upsertWeight(d, weightInLbs);
+      weightEntriesPage = 1;
       await refreshAll(showBanner, clearBanner);
       showBanner("Weight saved successfully!", "success");
       weightInput.classList.remove("invalid");

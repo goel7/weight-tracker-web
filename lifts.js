@@ -41,6 +41,7 @@ const liftTableExerciseSelect = document.getElementById(
   "liftTableExerciseSelect",
 );
 const liftEntriesBody = document.getElementById("liftEntriesBody");
+const liftEntriesPagination = document.getElementById("liftEntriesPagination");
 const liftLastText = document.getElementById("liftLastText");
 const liftRangeButtons = Array.from(
   document.querySelectorAll("#liftsPage .liftRangeBtn"),
@@ -66,6 +67,9 @@ let clearBannerFn = null;
 let activeNotesPopover = null;
 let activeNotesButton = null;
 let categories = [];
+let liftEntriesPage = 1;
+
+const LIFT_ENTRIES_PAGE_SIZE = 30;
 
 // Update labels based on unit preference
 export function updateLiftLabels() {
@@ -671,6 +675,7 @@ function renderLiftEntriesTable() {
     const tr = document.createElement("tr");
     tr.innerHTML = `<td colspan="6" class="emptyTableMessage">Select an exercise to view entries</td>`;
     liftEntriesBody.appendChild(tr);
+    renderLiftEntriesPagination(0);
     return;
   }
 
@@ -683,10 +688,22 @@ function renderLiftEntriesTable() {
     const tr = document.createElement("tr");
     tr.innerHTML = `<td colspan="6" class="emptyTableMessage">No entries yet for this exercise. Start logging above!</td>`;
     liftEntriesBody.appendChild(tr);
+    renderLiftEntriesPagination(0);
     return;
   }
 
-  for (const r of rows) {
+  const totalPages = Math.max(
+    1,
+    Math.ceil(rows.length / LIFT_ENTRIES_PAGE_SIZE),
+  );
+  if (liftEntriesPage > totalPages) {
+    liftEntriesPage = totalPages;
+  }
+
+  const start = (liftEntriesPage - 1) * LIFT_ENTRIES_PAGE_SIZE;
+  const pageRows = rows.slice(start, start + LIFT_ENTRIES_PAGE_SIZE);
+
+  for (const r of pageRows) {
     const tr = document.createElement("tr");
 
     const tdDate = document.createElement("td");
@@ -794,6 +811,62 @@ function renderLiftEntriesTable() {
 
     liftEntriesBody.appendChild(tr);
   }
+
+  renderLiftEntriesPagination(rows.length);
+}
+
+function renderLiftEntriesPagination(totalEntries) {
+  if (!liftEntriesPagination) return;
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(totalEntries / LIFT_ENTRIES_PAGE_SIZE),
+  );
+
+  if (liftEntriesPage > totalPages) {
+    liftEntriesPage = totalPages;
+  }
+
+  if (totalEntries <= LIFT_ENTRIES_PAGE_SIZE) {
+    liftEntriesPagination.classList.add("hidden");
+    liftEntriesPagination.innerHTML = "";
+    return;
+  }
+
+  liftEntriesPagination.classList.remove("hidden");
+  liftEntriesPagination.innerHTML = "";
+
+  const prevBtn = document.createElement("button");
+  prevBtn.type = "button";
+  prevBtn.className = "paginationBtn";
+  prevBtn.textContent = "←";
+  prevBtn.disabled = liftEntriesPage <= 1;
+  prevBtn.setAttribute("aria-label", "Previous page");
+  prevBtn.addEventListener("click", () => {
+    if (liftEntriesPage <= 1) return;
+    liftEntriesPage -= 1;
+    renderLiftEntriesTable();
+  });
+
+  const status = document.createElement("span");
+  status.className = "paginationStatus";
+  status.textContent = `Page ${liftEntriesPage} of ${totalPages}`;
+
+  const nextBtn = document.createElement("button");
+  nextBtn.type = "button";
+  nextBtn.className = "paginationBtn";
+  nextBtn.textContent = "→";
+  nextBtn.disabled = liftEntriesPage >= totalPages;
+  nextBtn.setAttribute("aria-label", "Next page");
+  nextBtn.addEventListener("click", () => {
+    if (liftEntriesPage >= totalPages) return;
+    liftEntriesPage += 1;
+    renderLiftEntriesTable();
+  });
+
+  liftEntriesPagination.appendChild(prevBtn);
+  liftEntriesPagination.appendChild(status);
+  liftEntriesPagination.appendChild(nextBtn);
 }
 
 // Modal management
@@ -1384,6 +1457,7 @@ export function initLiftListeners(showBanner, clearBanner) {
         const firstExerciseId = String(filteredExercises[0].id);
         liftViewExerciseSelect.value = firstExerciseId;
         liftTableExerciseSelect.value = firstExerciseId;
+        liftEntriesPage = 1;
         renderLiftChart();
         renderLiftEntriesTable();
       }
@@ -1392,11 +1466,13 @@ export function initLiftListeners(showBanner, clearBanner) {
 
   liftViewExerciseSelect.addEventListener("change", () => {
     liftTableExerciseSelect.value = liftViewExerciseSelect.value;
+    liftEntriesPage = 1;
     renderLiftChart();
     renderLiftEntriesTable();
   });
   liftTableExerciseSelect.addEventListener("change", () => {
     liftViewExerciseSelect.value = liftTableExerciseSelect.value;
+    liftEntriesPage = 1;
     renderLiftChart();
     renderLiftEntriesTable();
   });
@@ -1487,6 +1563,7 @@ export function initLiftListeners(showBanner, clearBanner) {
 
       liftViewExerciseSelect.value = String(exId);
       liftTableExerciseSelect.value = String(exId);
+      liftEntriesPage = 1;
 
       await refreshLifts();
       showBanner("Lift saved successfully!", "success");

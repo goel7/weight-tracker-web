@@ -65,9 +65,34 @@
             <span id="unitToggleText">lbs</span>
           </button>
 
-          <button id="logoutBtn" class="btn ghost hidden" type="button">
-            Logout
-          </button>
+          <!-- Settings button with dropdown menu -->
+          <div id="settingsContainer" class="settingsContainer hidden">
+            <button
+              id="settingsBtn"
+              class="settingsBtn"
+              type="button"
+              title="Settings"
+              aria-label="Settings"
+            >
+              ☰
+            </button>
+            <div id="settingsMenu" class="settingsMenu">
+              <button id="settingsImportBtn" class="menuItem" type="button">
+                Import CSV
+              </button>
+              <button id="settingsExportBtn" class="menuItem" type="button">
+                Export CSV
+              </button>
+              <div class="menuDivider"></div>
+              <button
+                id="settingsLogoutBtn"
+                class="menuItem danger"
+                type="button"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -313,9 +338,10 @@
                   <tbody id="entriesBody"></tbody>
                 </table>
               </div>
-              <p class="muted small">
-                Click a row to load it. Delete removes that date.
-              </p>
+              <div
+                id="weightEntriesPagination"
+                class="tablePagination hidden"
+              ></div>
             </div>
 
             <div id="weeklyTab" class="hidden">
@@ -496,6 +522,7 @@
           </section>
 
           <!-- LIFT ENTRIES -->
+          <!-- ENTRIES -->
           <section class="card">
             <div class="card-title" style="margin-bottom: 8px">
               <h2 style="margin: 0">Entries</h2>
@@ -519,10 +546,10 @@
                 <tbody id="liftEntriesBody"></tbody>
               </table>
             </div>
-
-            <p class="muted small">
-              Click a row to load it. Delete removes that entry.
-            </p>
+            <div
+              id="liftEntriesPagination"
+              class="tablePagination hidden"
+            ></div>
           </section>
         </section>
       </section>
